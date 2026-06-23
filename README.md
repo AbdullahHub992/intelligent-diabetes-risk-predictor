@@ -70,7 +70,7 @@ Change codes via `.env` (`OWNER_ADMIN_ACCESS_CODE`, `OWNER_DOCTOR_ACCESS_CODE`) 
 3. Set env vars when prompted:
    - `OWNER_ADMIN_ACCESS_CODE` (e.g. your private admin code)
    - `OWNER_DOCTOR_ACCESS_CODE` (e.g. your private doctor code)
-4. Wait ~5–8 min for the first build. Your URL will be like `https://diabetes-risk-predictor.onrender.com`.
+4. Wait ~5–8 min for the first build. Your URL will be like `https://intelligent-diabetes-risk-predictor.onrender.com`.
 
 **Notes**
 - Free tier sleeps after ~15 min idle; first visit after sleep takes ~30–60 s.

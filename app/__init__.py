@@ -58,6 +58,11 @@ def create_app(config_class=Config):
     app.register_blueprint(provider_bp, url_prefix="/provider")
 
     @app.context_processor
+    def inject_app_name():
+        from config import APP_NAME
+        return {"app_name": APP_NAME}
+
+    @app.context_processor
     def inject_csrf_token():
         from flask_wtf.csrf import generate_csrf
         return {"csrf_token": generate_csrf}

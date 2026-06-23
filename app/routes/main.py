@@ -75,7 +75,7 @@ def _run_prediction_for_record(record):
 
 @main_bp.route("/health")
 def health():
-    return {"ok": True, "service": "diabetes-risk-predictor"}, 200
+    return {"ok": True, "service": "Intelligent Diabetes Risk Predictor"}, 200
 
 
 @main_bp.route("/")

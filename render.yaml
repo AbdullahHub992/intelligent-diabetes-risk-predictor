@@ -10,7 +10,7 @@
 
 services:
   - type: web
-    name: diabetes-risk-predictor
+    name: intelligent-diabetes-risk-predictor
     runtime: docker
     plan: free
     region: oregon

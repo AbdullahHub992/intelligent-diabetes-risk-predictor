@@ -13,6 +13,9 @@ def _database_uri():
     return f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'diabetes.db')}"
 
 
+APP_NAME = "Intelligent Diabetes Risk Predictor"
+
+
 class Config:
     BASE_DIR = BASE_DIR
     SECRET_KEY = os.environ.get("SECRET_KEY", "diabetes-risk-predictor-cs619-secret-key")
