@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="mb-2">My Profile</h3>
+                <p class="text-muted mb-4">
+                    Update your account details. You are logged in as
+                    <strong>{{ current_user.role | replace('provider', 'Doctor') | title }}</strong>.
+                </p>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.full_name.label(class="form-label fw-semibold") }}
+                        {{ form.full_name(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label fw-semibold") }}
+                        {{ form.username(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label fw-semibold") }}
+                        {{ form.email(class="form-control") }}
+                    </div>
+                    <hr>
+                    <p class="text-muted small">Leave password fields blank to keep your current password.</p>
+                    <div class="mb-3">
+                        {{ form.new_password.label(class="form-label fw-semibold") }}
+                        {{ form.new_password(class="form-control") }}
+                    </div>
+                    <div class="mb-4">
+                        {{ form.confirm_password.label(class="form-label fw-semibold") }}
+                        {{ form.confirm_password(class="form-control") }}
+                    </div>
+                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Doctor Remark{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Doctor's Remarks</h2>
+        <p class="text-muted mb-0">
+            From <strong>Dr. {{ remark.provider.full_name }}</strong>
+            on {{ remark.created_at.strftime('%d %b %Y at %H:%M') }}
+        </p>
+    </div>
+    <a href="{{ url_for('main.patient_notifications') }}" class="btn btn-outline-secondary">← All Notifications</a>
+</div>
+
+<div class="card shadow-sm border-primary border-top border-3 mb-4">
+    <div class="card-header bg-primary text-white fw-semibold">Doctor Remarks on Your Report</div>
+    <div class="card-body">
+        <p class="mb-2">
+            <strong>Report date:</strong> {{ prediction.created_at.strftime('%d %b %Y') }} —
+            <span class="badge bg-{% if prediction.risk_level == 'High' %}danger{% elif prediction.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %}">
+                {{ prediction.risk_level }} risk ({{ '%.0f'|format(prediction.probability * 100) }}%)
+            </span>
+        </p>
+        <div class="p-3 bg-light rounded">{{ remark.remark }}</div>
+    </div>
+</div>
+
+{% if remark.feedback_submitted %}
+<div class="alert alert-success">You have already submitted feedback for this remark. Thank you!</div>
+{% else %}
+<div class="card shadow-sm">
+    <div class="card-header fw-semibold">Your Feedback</div>
+    <div class="card-body">
+        <p class="text-muted small">Please share your feedback after reading the doctor's remarks.</p>
+        <form method="POST">
+            {{ feedback_form.hidden_tag() }}
+            <div class="mb-3">{{ feedback_form.prediction_id.label(class="form-label") }}{{ feedback_form.prediction_id(class="form-select") }}</div>
+            <div class="mb-3">{{ feedback_form.rating.label(class="form-label") }}{{ feedback_form.rating(class="form-select") }}</div>
+            <div class="mb-3">{{ feedback_form.actual_outcome.label(class="form-label") }}{{ feedback_form.actual_outcome(class="form-select") }}</div>
+            <div class="mb-3">{{ feedback_form.comment.label(class="form-label") }}{{ feedback_form.comment(class="form-control", rows=4, placeholder="Your response to the doctor's remarks...") }}</div>
+            {{ feedback_form.submit(class="btn btn-primary btn-lg") }}
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

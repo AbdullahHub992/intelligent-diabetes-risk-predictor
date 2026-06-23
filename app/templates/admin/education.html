@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Education CMS{% endblock %}
+{% block content %}
+<h2 class="mb-4">Education Content Management</h2>
+<a href="{{ url_for('admin.edit_education') }}" class="btn btn-primary mb-3">Add Resource</a>
+<div class="card shadow-sm">
+    <table class="table mb-0">
+        <thead><tr><th>Title</th><th>Category</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for r in resources %}
+        <tr>
+            <td>{{ r.title }}</td>
+            <td>{{ r.category }}</td>
+            <td>
+                <a href="{{ url_for('admin.edit_education', resource_id=r.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <form method="POST" action="{{ url_for('admin.delete_education', resource_id=r.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

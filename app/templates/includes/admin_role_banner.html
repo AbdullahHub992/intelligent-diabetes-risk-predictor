@@ -1,0 +1,25 @@
+{% if current_user.is_authenticated and current_user.is_admin %}
+<div class="admin-role-banner mb-4" role="status" aria-live="polite">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <span class="admin-role-badge">Administrator</span>
+            <strong class="ms-2">You are logged in as Admin</strong>
+            <span class="text-muted ms-1">— {{ current_user.full_name }}</span>
+        </div>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-sm btn-dark">Admin Home</a>
+        {% if admin_unread_reports > 0 %}
+        <a href="{{ url_for('admin.received_reports') }}" class="btn btn-sm btn-warning">
+            {{ admin_unread_reports }} New Report{{ 's' if admin_unread_reports != 1 else '' }}
+        </a>
+        {% endif %}
+        {% if admin_unread_feedback > 0 %}
+        <a href="{{ url_for('admin.view_feedback') }}" class="btn btn-sm btn-warning">
+            {{ admin_unread_feedback }} New Feedback
+        </a>
+        {% endif %}
+    </div>
+    <p class="mb-0 mt-2 small text-muted">
+        Manage users, assign patients to doctors, train models, and control system settings.
+    </p>
+</div>
+{% endif %}

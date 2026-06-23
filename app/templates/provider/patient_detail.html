@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.full_name }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">{{ patient.full_name }}</h2>
+<div class="mb-3">
+    <a href="{{ url_for('provider.export_patient_csv', patient_id=patient.id) }}" class="btn btn-sm btn-outline-secondary">Export CSV</a>
+    <a href="{{ url_for('provider.export_patient_pdf', patient_id=patient.id) }}" class="btn btn-sm btn-outline-danger">Export PDF</a>
+</div>
+<div class="card shadow-sm mb-4">
+    <div class="card-header">Health Trend</div>
+    <div class="card-body"><canvas id="patientChart" height="90"></canvas></div>
+</div>
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header">Health Records</div>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Date</th><th>Glucose</th><th>BMI</th><th>BP</th></tr></thead>
+                <tbody>
+                {% for r in records|reverse %}
+                <tr><td>{{ r.recorded_at.strftime('%Y-%m-%d') }}</td><td>{{ r.glucose }}</td><td>{{ r.bmi }}</td><td>{{ (r.systolic or 120)|int }}/{{ (r.diastolic or r.blood_pressure or 80)|int }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header">Predictions</div>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Date</th><th>Risk</th><th>Prob</th><th></th></tr></thead>
+                <tbody>
+                {% for p in predictions %}
+                <tr>
+                    <td>{{ p.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ p.risk_level }}</td>
+                    <td>{{ '%.0f'|format(p.probability * 100) }}%</td>
+                    <td><a href="{{ url_for('provider.clinical_support', prediction_id=p.id) }}" class="btn btn-sm btn-outline-primary">CDS</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card shadow-sm mt-3">
+            <div class="card-header">Clinical Notes</div>
+            <ul class="list-group list-group-flush">
+                {% for n in notes %}
+                <li class="list-group-item small"><strong>{{ n.created_at.strftime('%Y-%m-%d') }}</strong>: {{ n.note }}</li>
+                {% else %}
+                <li class="list-group-item text-muted">No notes yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const d = {{ chart_data | tojson }};
+new Chart(document.getElementById('patientChart'), {
+    type: 'line',
+    data: {
+        labels: d.dates,
+        datasets: [
+            { label: 'Glucose', data: d.glucose, borderColor: '#dc2626', tension: 0.3 },
+            { label: 'Risk %', data: d.risk, borderColor: '#059669', tension: 0.3 }
+        ]
+    }
+});
+</script>
+{% endblock %}

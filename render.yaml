@@ -1,0 +1,29 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Deploy:
+#   1. Push this folder to GitHub.
+#   2. Render → New + → Blueprint → select the repo.
+#   3. First build takes ~5–8 min (scikit-learn + matplotlib).
+#
+# Free tier: app sleeps after ~15 min idle (first load ~30–60 s).
+# Optional: add a free Neon Postgres URL as DATABASE_URL for persistent data.
+
+services:
+  - type: web
+    name: diabetes-risk-predictor
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OWNER_ADMIN_ACCESS_CODE
+        sync: false
+      - key: OWNER_DOCTOR_ACCESS_CODE
+        sync: false
+      # Optional — link a Postgres DB (Neon free tier or Render Postgres):
+      # - key: DATABASE_URL
+      #   sync: false

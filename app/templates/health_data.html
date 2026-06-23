@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title | default('Health Data Input') }}{% endblock %}
+{% block content %}
+<h2 class="mb-2">{{ page_title | default('Enter Your Health Data') }}</h2>
+<p class="text-muted mb-4">{{ page_subtitle | default('Fill in your health numbers below. Try "Fill healthy example" to see a low-risk profile, or enter your own values.') }}</p>
+
+{% if form.errors %}
+<div class="alert alert-danger">
+    <strong>Please fix these issues:</strong>
+    <ul class="mb-0">
+    {% for field, errors in form.errors.items() %}
+        {% for error in errors %}
+        <li>{{ field }}: {{ error }}</li>
+        {% endfor %}
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="POST" id="healthForm">
+                    {{ form.hidden_tag() }}
+                    {% include 'includes/health_form_fields.html' %}
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">{{ submit_label | default('Submit & Get Prediction') }}</button>
+                        {% if not edit_mode %}
+                        <button type="button" class="btn btn-outline-secondary" id="fillHealthy">Fill healthy example</button>
+                        <button type="button" class="btn btn-outline-info" id="clearForm">Clear Form</button>
+                        {% endif %}
+                        <a href="{{ url_for('main.my_health_records') }}" class="btn btn-outline-dark">My Health Records</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        {% if prediction %}
+        <div class="card shadow-sm border-{% if prediction.risk_level == 'High' %}danger{% elif prediction.risk_level == 'Moderate' %}warning{% else %}success{% endif %}">
+            <div class="card-header fw-bold">Your Diabetes Prediction Result</div>
+            <div class="card-body">
+                {% include 'includes/prediction_result.html' %}
+                <hr>
+                <h6 class="mb-3">Personalized Recommendations</h6>
+                {% include 'includes/recommendation_panel.html' %}
+                <div class="d-flex gap-2 flex-wrap mt-3">
+                    <a href="{{ url_for('main.prediction_detail', prediction_id=prediction.id) }}" class="btn btn-sm btn-outline-primary">View Risk Factors</a>
+                    <a href="{{ url_for('main.edit_health_record', record_id=prediction.health_record_id) }}" class="btn btn-sm btn-outline-secondary">Update These Values</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card shadow-sm bg-light">
+            <div class="card-body">
+                <h5 class="card-title">What does the result mean?</h5>
+                <p class="small">After you submit, you will see:</p>
+                <ul class="small">
+                    <li><strong>Probability of Having Diabetes</strong> — e.g. 65% means the model thinks there is a 65% chance of diabetes based on your numbers</li>
+                    <li><strong>Probability of No Diabetes</strong> — the remaining chance (e.g. 35%)</li>
+                    <li><strong>Risk Level</strong> — Low, Moderate, or High</li>
+                </ul>
+                <hr>
+                <p class="small mb-0">Made a mistake? Go to <strong>My Health Records</strong> to update your values anytime.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePregnanciesForSex() {
+    const sex = document.getElementById('sex');
+    const pregnancies = document.getElementById('pregnancies');
+    const field = document.getElementById('pregnanciesField');
+    if (!sex || !pregnancies) return;
+    if (sex.value === 'male') {
+        pregnancies.value = '0';
+        pregnancies.disabled = true;
+        field.classList.add('opacity-50');
+    } else {
+        pregnancies.disabled = false;
+        field.classList.remove('opacity-50');
+    }
+}
+document.getElementById('sex')?.addEventListener('change', updatePregnanciesForSex);
+document.getElementById('healthForm')?.addEventListener('submit', function(e) {
+    const pregnancies = document.getElementById('pregnancies');
+    if (pregnancies) pregnancies.disabled = false;
+    const sys = parseFloat(document.getElementById('systolic')?.value);
+    const dia = parseFloat(document.getElementById('diastolic')?.value);
+    const bpError = document.getElementById('bpError');
+    if (!isNaN(sys) && !isNaN(dia) && sys <= dia) {
+        e.preventDefault();
+        if (bpError) bpError.classList.remove('d-none');
+    } else if (bpError) {
+        bpError.classList.add('d-none');
+    }
+});
+updatePregnanciesForSex();
+</script>
+{% if not edit_mode %}
+<script>
+const healthyExample = {{ healthy_example_json | safe }};
+document.getElementById('fillHealthy').addEventListener('click', function() {
+    document.getElementById('pregnancies').value = healthyExample.pregnancies;
+    document.getElementById('glucose').value = healthyExample.glucose;
+    document.getElementById('systolic').value = healthyExample.systolic;
+    document.getElementById('diastolic').value = healthyExample.diastolic;
+    document.getElementById('skin_thickness').value = healthyExample.skin_thickness;
+    document.getElementById('insulin').value = healthyExample.insulin;
+    document.getElementById('bmi').value = healthyExample.bmi;
+    document.getElementById('diabetes_pedigree').value = '0';
+    document.getElementById('age').value = healthyExample.age;
+});
+document.getElementById('clearForm').addEventListener('click', function() {
+    document.getElementById('healthForm').reset();
+    document.getElementById('pregnancies').value = '0';
+    document.getElementById('diabetes_pedigree').value = '0';
+});
+</script>
+{% endif %}
+{% endblock %}

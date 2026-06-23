@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Education{% endblock %}
+{% block content %}
+<h2 class="mb-4">Diabetes Education & Resources</h2>
+<div class="row g-4">
+    {% for category, items in grouped.items() %}
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header text-capitalize">{{ category.replace('_', ' ') }}</div>
+            {% for item in items %}
+            <div class="card-body border-bottom">
+                <h5>{{ item.title }}</h5>
+                <p>{{ item.content }}</p>
+                {% if item.external_url %}<a href="{{ item.external_url }}" target="_blank" rel="noopener">Learn more</a>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

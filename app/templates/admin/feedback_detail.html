@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Feedback Detail{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Patient Feedback</h2>
+        <p class="text-muted mb-0">Received {{ feedback.created_at.strftime('%d %b %Y at %H:%M') }}</p>
+    </div>
+    <a href="{{ url_for('admin.view_feedback') }}" class="btn btn-outline-secondary">Back to Inbox</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Feedback from {{ feedback.user.full_name }}</div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Patient:</strong> {{ feedback.user.full_name }} (@{{ feedback.user.username }})</p>
+                <p class="mb-2"><strong>Rating:</strong> {{ feedback.rating }}/5</p>
+                <p class="mb-2">
+                    <strong>Clinical outcome reported:</strong>
+                    {% if feedback.actual_outcome is not none %}
+                    {{ 'Diabetes confirmed' if feedback.actual_outcome else 'No diabetes' }}
+                    {% else %}
+                    <span class="text-muted">Not specified</span>
+                    {% endif %}
+                </p>
+                <p class="mb-0"><strong>Comment:</strong></p>
+                <p class="mb-0">{{ feedback.comment or 'No comment provided.' }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        {% if prediction %}
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Related Prediction</div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Date:</strong> {{ prediction.created_at.strftime('%d %b %Y') }}</p>
+                <p class="mb-2"><strong>Model:</strong> {{ prediction.model_name }}</p>
+                <p class="mb-2">
+                    <strong>Risk:</strong>
+                    <span class="badge bg-{% if prediction.risk_level == 'High' %}danger{% elif prediction.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %}">
+                        {{ prediction.risk_level }}
+                    </span>
+                    ({{ '%.1f'|format(prediction.probability * 100) }}%)
+                </p>
+                {% if record %}
+                <p class="mb-0 small text-muted">
+                    Glucose {{ '%.0f'|format(record.glucose) }} mg/dL,
+                    BMI {{ '%.1f'|format(record.bmi) }},
+                    age {{ record.age }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        <div class="card shadow-sm mt-3">
+            <div class="card-body small text-muted">
+                {% if feedback.used_in_training %}
+                <span class="badge bg-success">Used in model retraining</span>
+                {% else %}
+                <span class="badge bg-secondary">Not yet used in retraining</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

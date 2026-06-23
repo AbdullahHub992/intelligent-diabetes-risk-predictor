@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ portal.title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow login-form-card portal-{{ portal_key }}">
+            <div class="card-body p-4">
+                <div class="text-center mb-3">
+                    <a href="{{ url_for('main.index') }}#login" class="text-muted small">&larr; Back to home</a>
+                </div>
+                <h3 class="mb-1 text-center">{{ portal.title }}</h3>
+                <p class="text-muted text-center mb-4">{{ portal.subtitle }}</p>
+                {% if portal.requires_owner_code %}
+                <div class="alert alert-warning small py-2">Only users with owner-approved credentials can log in here.</div>
+                {% endif %}
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    {% if portal.requires_owner_code %}
+                    <div class="mb-3">
+                        {{ form.owner_access_code.label(class="form-label fw-semibold") }}
+                        {{ form.owner_access_code(class="form-control", placeholder="Enter owner access code", autocomplete="new-password") }}
+                        {% if portal_key == 'doctor' %}
+                        <div class="form-text">Use the <strong>doctor</strong> access code only — not the admin code.</div>
+                        {% else %}
+                        <div class="form-text">Use the <strong>admin</strong> access code only — not the doctor code.</div>
+                        {% endif %}
+                    </div>
+                    <hr>
+                    {% endif %}
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control", placeholder="Username or email") }}
+                        {% if portal_key == 'patient' %}
+                        <div class="form-text">Use the username or email from registration — not your full name.</div>
+                        {% else %}
+                        <div class="form-text">Use the username given to you by the owner.</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">{{ form.password.label(class="form-label") }}{{ form.password(class="form-control", placeholder="Enter password") }}</div>
+                    <div class="form-check mb-3">{{ form.remember(class="form-check-input") }}{{ form.remember.label(class="form-check-label") }}</div>
+                    {{ form.submit(class="btn w-100 " + ("btn-primary" if portal_key == "patient" else "btn-success" if portal_key == "doctor" else "btn-dark")) }}
+                </form>
+                {% if portal_key == 'patient' %}
+                <p class="mt-3 mb-0 text-center">No account? <a href="{{ url_for('auth.register') }}">Register as patient</a></p>
+                {% endif %}
+                {% if portal.demo %}
+                <hr>
+                <small class="text-muted d-block text-center">Demo: {{ portal.demo }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

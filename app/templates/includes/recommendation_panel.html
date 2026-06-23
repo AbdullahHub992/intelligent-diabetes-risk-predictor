@@ -1,0 +1,26 @@
+{# recommendation_plan: dict from generate_recommendation_plan or parse_stored_recommendations #}
+{% if recommendation_plan %}
+<div class="recommendation-panel">
+    <div class="alert alert-{% if recommendation_plan.risk_level == 'High' %}danger{% elif recommendation_plan.risk_level == 'Moderate' %}warning{% else %}success{% endif %} py-2 mb-3">
+        <strong>Recommendation Summary:</strong> {{ recommendation_plan.summary }}
+    </div>
+
+    {% for block in recommendation_plan.categories %}
+    <div class="card mb-2 border-{% if block.priority == 'high' %}danger{% elif block.priority == 'medium' %}warning{% else %}success{% endif %} border-opacity-25">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <strong class="small">{{ block.title }}</strong>
+            <span class="badge bg-{% if block.priority == 'high' %}danger{% elif block.priority == 'medium' %}warning text-dark{% else %}secondary{% endif %}">
+                {{ block.priority | title }}
+            </span>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for item in block['items'] %}
+            <li class="list-group-item py-2 small">
+                <span class="text-primary me-1">&#10003;</span> {{ item }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

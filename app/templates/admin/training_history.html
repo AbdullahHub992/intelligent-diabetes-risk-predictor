@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Training History{% endblock %}
+{% block content %}
+<h2 class="mb-4">Model Training History</h2>
+<div class="card shadow-sm">
+    <table class="table mb-0">
+        <thead><tr><th>Type</th><th>Dataset</th><th>Rows</th><th>Feedback</th><th>Best Model</th><th>Status</th><th>Started</th></tr></thead>
+        <tbody>
+        {% for j in jobs %}
+        <tr>
+            <td>{{ j.job_type }}</td>
+            <td>{{ j.dataset_filename }}</td>
+            <td>{{ j.rows_used }}</td>
+            <td>{{ j.feedback_rows }}</td>
+            <td>{{ j.best_model or '-' }}</td>
+            <td>{{ j.status }}</td>
+            <td>{{ j.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

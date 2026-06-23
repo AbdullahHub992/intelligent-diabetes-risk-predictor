@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Patient Feedback{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h2 class="mb-1">Patient Feedback Inbox</h2>
+        <p class="text-muted mb-0">Feedback sent by patients from the Feedback page.</p>
+    </div>
+    {% if unread_count > 0 %}
+    <form method="POST" action="{{ url_for('admin.mark_all_feedback_read') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-secondary">Mark All as Read</button>
+    </form>
+    {% endif %}
+</div>
+
+{% if unread_count > 0 %}
+<div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+    <span class="admin-notification-dot"></span>
+    <strong>{{ unread_count }} new feedback item{{ 's' if unread_count != 1 else '' }}</strong>
+    from patient{{ 's' if unread_count != 1 else '' }}.
+</div>
+{% endif %}
+
+{% if pending > 0 %}
+<form method="POST" action="{{ url_for('admin.retrain_feedback') }}" class="mb-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-success">Retrain Models with {{ pending }} Verified Outcome(s)</button>
+</form>
+{% endif %}
+
+<div class="card shadow-sm">
+    {% if feedbacks %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Patient</th>
+                    <th>Rating</th>
+                    <th>Outcome</th>
+                    <th>Comment</th>
+                    <th>Sent On</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for f in feedbacks %}
+            <tr class="{% if not f.is_read %}table-warning{% endif %}">
+                <td>
+                    {% if f.is_read %}
+                    <span class="badge bg-secondary">Read</span>
+                    {% else %}
+                    <span class="badge bg-danger">New</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ f.user.full_name }}</strong>
+                    <div class="small text-muted">@{{ f.user.username }}</div>
+                </td>
+                <td>{{ f.rating }}/5</td>
+                <td>
+                    {% if f.actual_outcome is not none %}
+                    {{ 'Diabetes' if f.actual_outcome else 'No Diabetes' }}
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td class="small text-muted">{{ (f.comment or '—')[:80] }}{% if f.comment and f.comment|length > 80 %}…{% endif %}</td>
+                <td>{{ f.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+                <td class="text-end">
+                    <a href="{{ url_for('admin.view_feedback_detail', feedback_id=f.id) }}" class="btn btn-sm btn-primary">
+                        {% if f.is_read %}View{% else %}View New{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-center text-muted py-5">
+        <p class="mb-1 fw-semibold">No patient feedback yet</p>
+        <p class="mb-0 small">When a patient sends feedback, it will appear here with a notification.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

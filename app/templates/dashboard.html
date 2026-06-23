@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2 class="mb-2">Patient Dashboard</h2>
+<p class="text-muted mb-4">View all your health reports and send them to the administrator.</p>
+{% if alert %}<div class="alert alert-warning">{{ alert }}</div>{% endif %}
+
+{% if unread_remarks > 0 %}
+<div class="card shadow-lg border-0 mb-4 patient-notification-card">
+    <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="patient-notification-icon">🔔</div>
+            <div>
+                <h4 class="mb-1 text-danger fw-bold">{{ unread_remarks }} New Doctor Remark{{ 's' if unread_remarks != 1 else '' }}!</h4>
+                <p class="mb-0 text-muted">Your doctor reviewed your report and left a message for you.</p>
+            </div>
+        </div>
+        <a href="{{ url_for('main.patient_notifications') }}" class="btn btn-danger btn-lg fw-bold">Open Notifications</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="card shadow send-admin-card mb-4 border-0">
+    <div class="card-body p-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="send-admin-icon">📤</div>
+                    <div>
+                        <h4 class="mb-2">Send Your Report to Admin</h4>
+                        <p class="text-muted mb-0">
+                            Share your diabetes risk report directly with the administrator.
+                            The admin will get a notification when you send it.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                {% if predictions %}
+                <a href="{{ url_for('main.send_report_to_admin', prediction_id=predictions[0].id) }}"
+                   class="btn btn-success btn-lg w-100 fw-bold send-admin-btn">
+                    Send Report to Admin
+                </a>
+                <div class="small text-muted mt-2">
+                    Latest: {{ predictions[0].created_at.strftime('%d %b %Y') }} — {{ predictions[0].risk_level }} risk
+                </div>
+                {% else %}
+                <a href="{{ url_for('main.health_data') }}" class="btn btn-primary btn-lg w-100 fw-bold">
+                    Add Health Data First
+                </a>
+                <div class="small text-muted mt-2">You need at least one prediction before sending.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3"><div class="card stat-card bg-primary text-white"><div class="card-body"><h6>Health Records</h6><h2>{{ records|length }}</h2></div></div></div>
+    <div class="col-md-3"><div class="card stat-card bg-success text-white"><div class="card-body"><h6>My Reports</h6><h2>{{ predictions|length }}</h2></div></div></div>
+    <div class="col-md-3"><div class="card stat-card bg-warning text-dark"><div class="card-body"><h6>Latest Risk</h6><h2>{{ predictions[0].risk_level if predictions else 'N/A' }}</h2></div></div></div>
+    <div class="col-md-3"><div class="card stat-card bg-info text-white"><div class="card-body"><h6>Doctor Remarks</h6><h2>{{ doctor_remarks|length }}</h2>{% if unread_remarks > 0 %}<span class="small">{{ unread_remarks }} new</span>{% endif %}</div></div></div>
+</div>
+
+{% if doctor_remarks %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Doctor Notifications</span>
+        <a href="{{ url_for('main.patient_notifications') }}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for r in doctor_remarks[:3] %}
+        <li class="list-group-item d-flex justify-content-between align-items-center {% if not r.is_read %}list-group-item-warning{% endif %}">
+            <div>
+                <strong>Dr. {{ r.provider.full_name }}</strong>
+                <div class="small text-muted">{{ r.created_at.strftime('%d %b %Y, %H:%M') }}</div>
+                <div class="small">{{ r.remark[:80] }}{% if r.remark|length > 80 %}...{% endif %}</div>
+            </div>
+            <a href="{{ url_for('main.view_doctor_remark', remark_id=r.id) }}" class="btn btn-sm btn-primary">
+                {% if not r.is_read %}Open{% else %}View{% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span class="fw-semibold">Risk Trend Over Time</span>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.export_csv') }}" class="btn btn-sm btn-outline-secondary">Download CSV</a>
+                    <a href="{{ url_for('main.export_pdf') }}" class="btn btn-sm btn-outline-danger">Download PDF</a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if predictions %}
+                <canvas id="riskChart" height="120"></canvas>
+                {% else %}
+                <p class="text-muted mb-0 text-center py-4">No reports yet. <a href="{{ url_for('main.health_data') }}">Add health data</a> to get your first prediction.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Reports Sent to Admin</div>
+            {% if sent_reports %}
+            <ul class="list-group list-group-flush">
+                {% for s in sent_reports %}
+                <li class="list-group-item small">
+                    <strong>{{ s.created_at.strftime('%d %b %Y, %H:%M') }}</strong>
+                    <div>{{ s.prediction.risk_level }} risk — {{ '%.0f'|format(s.prediction.probability * 100) }}%</div>
+                    {% if s.message %}<div class="text-muted">{{ s.message }}</div>{% endif %}
+                    <span class="badge bg-success mt-1">Sent</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="card-body text-muted small">
+                You have not sent any report to admin yet. Use the green button above.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if recommendation_plan %}
+<div class="card shadow-sm mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Latest Recommendations</span>
+        {% if predictions %}
+        <a href="{{ url_for('main.prediction_detail', prediction_id=predictions[0].id) }}" class="btn btn-sm btn-outline-primary">Full details</a>
+        {% endif %}
+    </div>
+    <div class="card-body">{% include 'includes/recommendation_panel.html' %}</div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="fw-semibold">All My Reports ({{ predictions|length }})</span>
+        <a href="{{ url_for('main.my_health_records') }}" class="btn btn-sm btn-outline-primary">View All Health Records</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Model</th>
+                    <th>Diabetes Probability</th>
+                    <th>Risk</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in predictions %}
+            <tr>
+                <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ p.model_name }}</td>
+                <td><strong>{{ '%.1f'|format(p.probability * 100) }}%</strong> <small class="text-muted">chance of diabetes</small></td>
+                <td><span class="badge bg-{% if p.risk_level == 'High' %}danger{% elif p.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %}">{{ p.risk_level }}</span></td>
+                <td class="text-end">
+                    <a href="{{ url_for('main.prediction_detail', prediction_id=p.id) }}" class="btn btn-sm btn-outline-primary">Details</a>
+                    <a href="{{ url_for('main.edit_health_record', record_id=p.health_record_id) }}" class="btn btn-sm btn-outline-secondary">Update</a>
+                    <a href="{{ url_for('main.send_report_to_admin', prediction_id=p.id) }}" class="btn btn-sm btn-success fw-semibold">Send to Admin</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-muted text-center py-4">
+                    No reports yet. <a href="{{ url_for('main.health_data') }}">Add health data</a> to create your first report.
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if predictions %}
+<script>
+new Chart(document.getElementById('riskChart'), {
+    type: 'line',
+    data: {
+        labels: {{ trend_data | map(attribute='date') | list | tojson }},
+        datasets: [{ label: 'Diabetes Probability %', data: {{ trend_data | map(attribute='probability') | list | tojson }}, borderColor: '#2563eb', fill: true, tension: 0.3 }]
+    },
+    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+});
+</script>
+{% endif %}
+{% endblock %}

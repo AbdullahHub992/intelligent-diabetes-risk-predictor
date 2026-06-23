@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Progress Monitoring{% endblock %}
+{% block content %}
+<h2 class="mb-4">Longitudinal Progress Monitoring</h2>
+{% if alert %}<div class="alert alert-warning">{{ alert }}</div>{% endif %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header">Health Metrics Over Time</div>
+    <div class="card-body"><canvas id="progressChart" height="100"></canvas></div>
+</div>
+<div class="card shadow-sm">
+    <div class="card-header">Health Records History</div>
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Date</th><th>Fasting Sugar</th><th>BMI</th><th>BP (Sys/Dia)</th><th>Age</th><th>Diabetes Prob.</th><th></th></tr></thead>
+        <tbody>
+        {% for item in history %}
+        <tr>
+            <td>{{ item.record.recorded_at.strftime('%Y-%m-%d') }}</td>
+            <td>{{ item.record.glucose }}</td>
+            <td>{{ item.record.bmi }}</td>
+            <td>{{ item.record.systolic | int }}/{{ item.record.diastolic | int }}</td>
+            <td>{{ item.record.age }}</td>
+            <td>{% if item.prediction %}{{ '%.0f'|format(item.prediction.probability * 100) }}% <small class="text-muted">({{ item.prediction.risk_level }})</small>{% else %}-{% endif %}</td>
+            <td><a href="{{ url_for('main.edit_health_record', record_id=item.record.id) }}" class="btn btn-sm btn-outline-primary">Update</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted">No records yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const data = {{ chart_data | tojson }};
+new Chart(document.getElementById('progressChart'), {
+    type: 'line',
+    data: {
+        labels: data.dates,
+        datasets: [
+            { label: 'Glucose', data: data.glucose, borderColor: '#dc2626', tension: 0.3 },
+            { label: 'BMI', data: data.bmi, borderColor: '#2563eb', tension: 0.3 },
+            { label: 'Diabetes Probability %', data: data.risk, borderColor: '#059669', tension: 0.3 }
+        ]
+    }
+});
+</script>
+{% endblock %}

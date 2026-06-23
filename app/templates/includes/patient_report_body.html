@@ -1,0 +1,78 @@
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Patient Info</div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Name:</strong> {{ summary.get('patient_name') or (report.patient.full_name if report.patient else '—') }}</p>
+                <p class="mb-1"><strong>Username:</strong> {{ summary.get('patient_username') or (report.patient.username if report.patient else '—') }}</p>
+                <p class="mb-0"><strong>Email:</strong> {{ summary.get('patient_email') or (report.patient.email if report.patient else '—') }}</p>
+            </div>
+        </div>
+        <div class="card shadow-sm mt-3">
+            <div class="card-header fw-semibold">ML Result</div>
+            <div class="card-body">
+                {% set risk = summary.get('risk_level') or (prediction.risk_level if prediction else '—') %}
+                {% set prob = summary.get('probability') if summary.get('probability') is not none else (prediction.probability if prediction else none) %}
+                <p class="mb-1"><strong>Model:</strong> {{ summary.get('model_name') or (prediction.model_name if prediction else '—') }}</p>
+                <p class="mb-1"><strong>Probability:</strong>
+                    {% if prob is not none %}{{ '%.1f'|format(prob * 100) }}%{% else %}—{% endif %}
+                </p>
+                <p class="mb-0">
+                    <strong>Risk:</strong>
+                    {% if risk != '—' %}
+                    <span class="badge bg-{% if risk == 'High' %}danger{% elif risk == 'Moderate' %}warning text-dark{% else %}success{% endif %}">{{ risk }}</span>
+                    {% else %}—{% endif %}
+                </p>
+            </div>
+        </div>
+        {% if report.message or summary.get('message') %}
+        <div class="card shadow-sm mt-3">
+            <div class="card-header fw-semibold">Patient Message</div>
+            <div class="card-body">{{ report.message or summary.get('message') }}</div>
+        </div>
+        {% endif %}
+        {% if admin_note %}
+        <div class="card shadow-sm mt-3 border-success">
+            <div class="card-header fw-semibold bg-success text-white">Admin Note to Doctor</div>
+            <div class="card-body">{{ admin_note }}</div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-8">
+        {% if health %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-semibold">Health Values</div>
+            <div class="card-body">
+                <div class="row g-2 small">
+                    <div class="col-md-4"><strong>Fasting Sugar:</strong> {{ health.get('glucose', '—') }} mg/dL</div>
+                    <div class="col-md-4"><strong>BMI:</strong> {{ health.get('bmi', '—') }}</div>
+                    <div class="col-md-4"><strong>Age:</strong> {{ health.get('age', '—') }}</div>
+                    <div class="col-md-4"><strong>BP:</strong> {{ health.get('systolic', '—') }}/{{ health.get('diastolic', '—') }} mmHg</div>
+                    <div class="col-md-4"><strong>Insulin:</strong> {{ health.get('insulin', '—') }}</div>
+                    <div class="col-md-4"><strong>Sex:</strong> {{ health.get('sex', '—') | capitalize }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if explanation %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-semibold">Risk Factors</div>
+            <ul class="list-group list-group-flush">
+                {% for factor in explanation %}
+                {% if factor is mapping %}
+                <li class="list-group-item small">
+                    <strong>{{ factor.get('factor', 'Factor') }}</strong>: {{ factor.get('message', '') }}
+                </li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if recommendation_plan %}
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Recommendations</div>
+            <div class="card-body">{% include 'includes/recommendation_panel.html' %}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,28 @@
+{# prediction: Prediction model instance #}
+<div class="prediction-result text-center mb-3">
+    <div class="display-4 fw-bold text-{% if prediction.risk_level == 'High' %}danger{% elif prediction.risk_level == 'Moderate' %}warning{% else %}success{% endif %}">
+        {{ '%.1f'|format(prediction.probability * 100) }}%
+    </div>
+    <div class="fw-semibold fs-5">Probability of Having Diabetes</div>
+    <p class="text-muted small mb-0">
+        Based on your health values, the model estimates a
+        <strong>{{ '%.1f'|format(prediction.probability * 100) }}%</strong> chance of diabetes
+        and a <strong>{{ '%.1f'|format((1 - prediction.probability) * 100) }}%</strong> chance of no diabetes.
+    </p>
+</div>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <span><strong>Diabetes Risk Level:</strong></span>
+    <span class="badge bg-{% if prediction.risk_level == 'High' %}danger{% elif prediction.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %} fs-6">
+        {{ prediction.risk_level }}
+    </span>
+</div>
+<p class="small text-muted mb-0"><strong>Model used:</strong> {{ prediction.model_name }}</p>
+{% if scored_record %}
+<p class="small text-muted mt-2 mb-0">
+    <strong>Values scored:</strong>
+    glucose {{ '%.0f'|format(scored_record.glucose) }} mg/dL,
+    BMI {{ '%.1f'|format(scored_record.bmi) }},
+    age {{ scored_record.age }},
+    BP {{ '%.0f'|format(scored_record.systolic) }}/{{ '%.0f'|format(scored_record.diastolic) }}
+</p>
+{% endif %}

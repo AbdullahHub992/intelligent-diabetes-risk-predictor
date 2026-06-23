@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Prediction Details{% endblock %}
+{% block content %}
+<h2 class="mb-4">Diabetes Prediction Details</h2>
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">Result Summary</div>
+            <div class="card-body">
+                <p><strong>Date:</strong> {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% include 'includes/prediction_result.html' %}
+                {% if record %}
+                <hr>
+                <a href="{{ url_for('main.edit_health_record', record_id=record.id) }}" class="btn btn-sm btn-outline-primary w-100 mb-2">Update Health Values</a>
+                <a href="{{ url_for('main.send_report_to_admin', prediction_id=prediction.id) }}" class="btn btn-sm btn-success w-100">Send This Report to Admin</a>
+                {% endif %}
+            </div>
+        </div>
+        {% if record %}
+        <div class="card shadow-sm mt-3">
+            <div class="card-header">Health Values Used</div>
+            <ul class="list-group list-group-flush small">
+                <li class="list-group-item d-flex justify-content-between"><span>Sex</span><strong>{{ record.sex | capitalize if record.sex else '—' }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Fasting Blood Sugar</span><strong>{{ record.glucose }} mg/dL</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Blood Pressure</span><strong>{{ record.systolic | int }}/{{ record.diastolic | int }} mmHg</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>BMI</span><strong>{{ record.bmi }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Age</span><strong>{{ record.age }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Insulin</span><strong>{{ record.insulin }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Pregnancies</span><strong>{{ record.pregnancies }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Family Diabetes History</span><strong>{% if record.diabetes_pedigree >= 1 %}Yes (1){% else %}No (0){% endif %}</strong></li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header">Why this diabetes probability?</div>
+            <ul class="list-group list-group-flush">
+                {% for factor in explanation %}
+                <li class="list-group-item">
+                    <span class="badge bg-{% if factor.type == 'ml_importance' %}primary{% elif factor.type == 'clinical_threshold' %}warning text-dark{% else %}secondary{% endif %} me-2">
+                        {{ factor.type | replace('_', ' ') | title }}
+                    </span>
+                    <strong>{{ factor.factor }}</strong> ({{ factor.value }})<br>
+                    <small class="text-muted">{{ factor.message }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card shadow-sm mt-3">
+            <div class="card-header fw-bold">Personalized Recommendation System</div>
+            <div class="card-body">{% include 'includes/recommendation_panel.html' %}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

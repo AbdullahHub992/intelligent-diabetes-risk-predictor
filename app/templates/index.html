@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Home - Diabetes Risk Predictor{% endblock %}
+{% block content %}
+<div class="home-page">
+<section class="home-hero text-center">
+    <div class="home-hero-content">
+        <span class="home-hero-badge">CS619 Final Project</span>
+        <h1 class="display-5 fw-bold">Intelligent Diabetes Risk Predictor</h1>
+        <p class="lead col-lg-9 mx-auto">
+            An ML-powered decision-support tool for early diabetes risk detection, continuous monitoring,
+            and preventive healthcare for patients and clinicians.
+        </p>
+    </div>
+</section>
+
+<section id="login" class="mb-5 home-section">
+    <h2 class="text-center mb-2">Sign In</h2>
+    <p class="text-center text-muted mb-4">Choose your role to access the right portal.</p>
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-4">
+            <div class="card login-portal-card h-100 shadow-sm border-0 portal-patient">
+                <div class="card-body text-center p-4 d-flex flex-column">
+                    <div class="portal-icon mb-3">🩺</div>
+                    <h4 class="card-title">Patient</h4>
+                    <p class="card-text text-muted flex-grow-1">
+                        Enter health data, view predictions, track progress, and read education resources.
+                    </p>
+                    <a href="{{ url_for('auth.login_patient') }}" class="btn btn-primary btn-lg w-100">Patient Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-link mt-2">New patient? Register</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card login-portal-card h-100 shadow-sm border-0 portal-doctor">
+                <div class="card-body text-center p-4 d-flex flex-column">
+                    <div class="portal-icon mb-3">👨‍⚕️</div>
+                    <h4 class="card-title">Doctor</h4>
+                    <p class="card-text text-muted flex-grow-1">
+                        Restricted access. Owner-approved username, password, and access code required.
+                    </p>
+                    <a href="{{ url_for('auth.login_doctor') }}" class="btn btn-success btn-lg w-100">Doctor Login</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card login-portal-card h-100 shadow-sm border-0 portal-admin">
+                <div class="card-body text-center p-4 d-flex flex-column">
+                    <div class="portal-icon mb-3">⚙️</div>
+                    <h4 class="card-title">Admin</h4>
+                    <p class="card-text text-muted flex-grow-1">
+                        Restricted access. Owner-approved username, password, and access code required.
+                    </p>
+                    <a href="{{ url_for('auth.login_admin') }}" class="btn btn-dark btn-lg w-100">Admin Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4 home-section pb-2">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm home-feature-card">
+            <div class="card-body">
+                <h5 class="card-title">ML Prediction</h5>
+                <p class="card-text">Neural Network, SVM, Decision Tree, and Logistic Regression models compared automatically.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm home-feature-card">
+            <div class="card-body">
+                <h5 class="card-title">Risk Analysis</h5>
+                <p class="card-text">Interpretable explanations, personalized recommendations, and longitudinal tracking.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm home-feature-card">
+            <div class="card-body">
+                <h5 class="card-title">Clinical Support</h5>
+                <p class="card-text">Healthcare providers access patient insights to support&mdash;not replace&mdash;clinical judgment.</p>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Edit Education{% endblock %}
+{% block content %}
+<h2 class="mb-4">{% if resource %}Edit{% else %}Add{% endif %} Education Resource</h2>
+<div class="col-md-8">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">{{ form.title.label(class="form-label") }}{{ form.title(class="form-control") }}</div>
+        <div class="mb-3">{{ form.category.label(class="form-label") }}{{ form.category(class="form-select") }}</div>
+        <div class="mb-3">{{ form.content.label(class="form-label") }}{{ form.content(class="form-control", rows=6) }}</div>
+        <div class="mb-3">{{ form.external_url.label(class="form-label") }}{{ form.external_url(class="form-control") }}</div>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+</div>
+{% endblock %}

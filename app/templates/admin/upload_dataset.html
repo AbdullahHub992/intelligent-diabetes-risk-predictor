@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Upload Dataset{% endblock %}
+{% block content %}
+<h2 class="mb-4">Dataset Import</h2>
+<div class="card shadow-sm col-lg-6">
+    <div class="card-body">
+        <p>Upload the diabetes dataset CSV (Kaggle: diabeticprediction). Required columns: Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age, Outcome.</p>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <input type="file" name="dataset" class="form-control" accept=".csv" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload Dataset</button>
+        </form>
+        <hr>
+        <p class="small text-muted mb-0">A sample dataset is included at <code>data/diabetes.csv</code>.</p>
+    </div>
+</div>
+{% endblock %}

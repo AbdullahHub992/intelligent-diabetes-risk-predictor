@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}EDA{% endblock %}
+{% block content %}
+<h2 class="mb-4">Data Analysis & Visualization</h2>
+{% if active_dataset %}
+<p>Dataset: <strong>{{ active_dataset.filename }}</strong> ({{ active_dataset.rows }} rows)
+<a href="{{ url_for('admin.export_eda_pdf') }}" class="btn btn-sm btn-outline-danger ms-2">Export EDA PDF</a></p>
+{% endif %}
+{% if eda_results %}
+<div class="row g-4">
+    <div class="col-md-4"><img src="{{ url_for('static', filename=eda_results.plots.correlation) }}" class="img-fluid rounded shadow-sm"></div>
+    <div class="col-md-4"><img src="{{ url_for('static', filename=eda_results.plots.histograms) }}" class="img-fluid rounded shadow-sm"></div>
+    <div class="col-md-4"><img src="{{ url_for('static', filename=eda_results.plots.outcome) }}" class="img-fluid rounded shadow-sm"></div>
+</div>
+<div class="card shadow-sm mt-4">
+    <div class="card-header">Summary Statistics</div>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <thead><tr><th>Feature</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead>
+            <tbody>
+            {% for feature, stats in eda_results.summary.items() %}
+            <tr>
+                <td>{{ feature }}</td>
+                <td>{{ '%.0f'|format(stats.count) }}</td>
+                <td>{{ '%.2f'|format(stats.mean) }}</td>
+                <td>{{ '%.2f'|format(stats.std) }}</td>
+                <td>{{ '%.2f'|format(stats.min) }}</td>
+                <td>{{ '%.2f'|format(stats['25%']) }}</td>
+                <td>{{ '%.2f'|format(stats['50%']) }}</td>
+                <td>{{ '%.2f'|format(stats['75%']) }}</td>
+                <td>{{ '%.2f'|format(stats.max) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% elif not active_dataset %}
+<div class="alert alert-warning">Upload a dataset first.</div>
+{% endif %}
+{% endblock %}

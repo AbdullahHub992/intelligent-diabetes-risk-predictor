@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Clinical Support{% endblock %}
+{% block content %}
+<h2 class="mb-4">Clinical Decision Support</h2>
+<div class="alert alert-info">Supports clinical judgment — does not replace professional medical diagnosis.</div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header">Patient Vitals</div>
+            <div class="card-body">
+                <p><strong>{{ patient.full_name }}</strong></p>
+                <p>Sex: {{ record.sex | capitalize if record.sex else '—' }}</p>
+                <p>Fasting Sugar: {{ record.glucose }} mg/dL | BMI: {{ record.bmi }}</p>
+                <p>BP: {{ record.systolic | int }}/{{ record.diastolic | int }} mmHg | Age: {{ record.age }}</p>
+                <p>Insulin: {{ record.insulin }} | Family Diabetes: {% if record.diabetes_pedigree >= 1 %}Yes{% else %}No{% endif %}</p>
+            </div>
+        </div>
+        <div class="card shadow-sm mt-3">
+            <div class="card-header">ML Assessment</div>
+            <div class="card-body">
+                <p>Model: {{ prediction.model_name }}</p>
+                <p>Probability: <strong>{{ '%.1f'|format(prediction.probability * 100) }}%</strong></p>
+                <p>Risk: <span class="badge bg-{% if prediction.risk_level == 'High' %}danger{% elif prediction.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %}">{{ prediction.risk_level }}</span></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">Risk Factor Analysis</div>
+            <ul class="list-group list-group-flush">
+                {% for factor in explanation %}
+                <li class="list-group-item"><strong>{{ factor.factor }}</strong>: {{ factor.message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-bold">Recommendation System (based on prediction)</div>
+            <div class="card-body">{% include 'includes/recommendation_panel.html' %}</div>
+        </div>
+        {% if current_user.is_provider and remark_form %}
+        <div class="card shadow-sm mb-3 border-primary border-top border-3">
+            <div class="card-header bg-primary text-white">Send Remarks to Patient</div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">Patient will get a notification on their dashboard.</p>
+                <form method="POST">
+                    {{ remark_form.hidden_tag() }}
+                    <input type="hidden" name="form_type" value="remark">
+                    {{ remark_form.remark(class="form-control mb-2", rows=3, placeholder="Your remarks for the patient...") }}
+                    {{ remark_form.submit(class="btn btn-primary btn-sm") }}
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        <div class="card shadow-sm">
+            <div class="card-header">Add Clinical Note (internal)</div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="form_type" value="note">
+                    {{ form.note(class="form-control mb-2", rows=3) }}
+                    {{ form.submit(class="btn btn-outline-secondary btn-sm") }}
+                </form>
+                {% for n in notes %}
+                <div class="border-top mt-2 pt-2 small"><strong>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</strong>: {{ n.note }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

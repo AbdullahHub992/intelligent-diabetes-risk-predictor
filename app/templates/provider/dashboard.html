@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Clinical Dashboard{% endblock %}
+{% block content %}
+<h2 class="mb-4">Clinical Decision Support</h2>
+<p class="text-muted">ML-based insights to support — not replace — professional clinical judgment.</p>
+
+{% if unread_forwards > 0 %}
+<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <strong>🔔 {{ unread_forwards }} new patient report{{ 's' if unread_forwards != 1 else '' }}</strong>
+        forwarded to you by admin.
+    </div>
+    <a href="{{ url_for('provider.forwarded_reports') }}" class="btn btn-warning btn-sm">View Reports</a>
+</div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Assigned Patients</h6><h2>{{ patients|length }}</h2></div></div></div>
+    <div class="col-md-3"><div class="card stat-card bg-danger text-white"><div class="card-body"><h6>High Risk Cases</h6><h2>{{ high_risk_count }}</h2></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Recent Predictions</h6><h2>{{ recent_predictions|length }}</h2></div></div></div>
+    <div class="col-md-3"><div class="card stat-card bg-success text-white"><div class="card-body"><h6>Admin Reports</h6><h2>{{ total_forwards }}</h2>{% if unread_forwards > 0 %}<span class="small">{{ unread_forwards }} new</span>{% endif %}<a href="{{ url_for('provider.forwarded_reports') }}" class="text-white small d-block">View all</a></div></div></div>
+</div>
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header">Patients</div>
+            <ul class="list-group list-group-flush">
+                {% for p in patients %}
+                <li class="list-group-item d-flex justify-content-between">
+                    {{ p.full_name }}
+                    <a href="{{ url_for('provider.patient_detail', patient_id=p.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted">No patients assigned. Contact admin.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">Risk Trend (Assigned Patients)</div>
+            <div class="card-body"><canvas id="providerChart" height="100"></canvas></div>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header">Recent Predictions</div>
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Patient</th><th>Risk</th><th>Prob</th><th>Date</th><th></th></tr></thead>
+                <tbody>
+                {% for p in recent_predictions %}
+                <tr>
+                    <td>{{ p.user.full_name }}</td>
+                    <td><span class="badge bg-{% if p.risk_level == 'High' %}danger{% elif p.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %}">{{ p.risk_level }}</span></td>
+                    <td>{{ '%.0f'|format(p.probability * 100) }}%</td>
+                    <td>{{ p.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td><a href="{{ url_for('provider.clinical_support', prediction_id=p.id) }}" class="btn btn-sm btn-outline-primary">Analyze</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+new Chart(document.getElementById('providerChart'), {
+    type: 'line',
+    data: {
+        labels: {{ risk_trend | map(attribute='date') | list | tojson }},
+        datasets: [{ label: 'Risk %', data: {{ risk_trend | map(attribute='probability') | list | tojson }}, borderColor: '#dc2626', tension: 0.3 }]
+    },
+    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+});
+</script>
+{% endblock %}
