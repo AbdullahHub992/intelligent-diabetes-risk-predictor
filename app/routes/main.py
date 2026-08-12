@@ -6,11 +6,11 @@ from flask_login import current_user, login_required
 
 from app import db
 from app.decorators import role_required
-from app.forms import FeedbackForm, HealthDataForm, SendReportToAdminForm
+from app.forms import ExportReportForm, FeedbackForm, HealthDataForm, SendReportToAdminForm
 from app.ml.predictor import predict_health_record, resolve_model_name
 from app.ml.recommendations import parse_stored_recommendations
 from app.ml.reports import generate_csv_report, generate_pdf_report
-from app.models import AdminReportSubmission, DoctorReportRemark, EducationResource, Feedback, HealthRecord, ModelMetrics, Prediction
+from app.models import AdminReportSubmission, DoctorReportRemark, EducationResource, Feedback, HealthRecord, ModelMetrics, Prediction, ProviderPatient
 from app.utils import (
     build_admin_report_snapshot, get_patient_doctor_remarks, get_unread_doctor_remarks_count,
     log_audit, redirect_to_role_home,
@@ -40,6 +40,9 @@ def _populate_health_form(form, record):
     form.bmi.data = record.bmi
     form.diabetes_pedigree.data = 1 if (record.diabetes_pedigree or 0) >= 0.5 else 0
     form.age.data = record.age
+    form.smoking.data = getattr(record, "smoking", None) or "never"
+    form.physical_activity.data = getattr(record, "physical_activity", None) or "moderate"
+    form.diet_quality.data = getattr(record, "diet_quality", None) or "average"
 
 
 def _apply_form_to_record(form, record):
@@ -55,6 +58,9 @@ def _apply_form_to_record(form, record):
     # Map yes/no family history to realistic Pima-scale pedigree values.
     record.diabetes_pedigree = 0.65 if int(form.diabetes_pedigree.data or 0) == 1 else 0.28
     record.age = form.age.data
+    record.smoking = form.smoking.data
+    record.physical_activity = form.physical_activity.data
+    record.diet_quality = form.diet_quality.data
 
 
 def _run_prediction_for_record(record):
@@ -67,6 +73,7 @@ def _run_prediction_for_record(record):
         db.session.add(prediction)
     prediction.model_name = result["model_name"]
     prediction.probability = result["probability"]
+    prediction.confidence_score = result.get("confidence_score")
     prediction.risk_level = result["risk_level"]
     prediction.explanation = result["explanation"]
     prediction.recommendations = result["recommendations"]
@@ -156,7 +163,11 @@ def health_data():
     return render_template(
         "health_data.html", form=form, prediction=latest_prediction,
         scored_record=scored_record,
-        recommendation_plan=rec_plan, **ctx,
+        recommendation_plan=rec_plan,
+        page_title="Input Health Data & Predict Risk",
+        page_subtitle="Enter clinical and lifestyle metrics (glucose, blood pressure, BMI, age, habits) to generate a diabetes risk prediction with confidence score.",
+        submit_label="Generate Prediction",
+        **ctx,
     )
 
 
@@ -243,13 +254,18 @@ def education():
 
 @main_bp.route("/feedback", methods=["GET", "POST"])
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def feedback():
     form = FeedbackForm()
     if current_user.is_patient:
         preds = Prediction.query.filter_by(user_id=current_user.id).order_by(
             Prediction.created_at.desc()
         ).limit(20).all()
+    elif current_user.is_provider:
+        patient_ids = [a.patient_id for a in ProviderPatient.query.filter_by(provider_id=current_user.id).all()]
+        preds = Prediction.query.filter(Prediction.user_id.in_(patient_ids)).order_by(
+            Prediction.created_at.desc()
+        ).limit(20).all() if patient_ids else []
     else:
         preds = Prediction.query.order_by(Prediction.created_at.desc()).limit(20).all()
     form.prediction_id.choices = [
@@ -383,12 +399,61 @@ def view_doctor_remark(remark_id):
     )
 
 
+def _filter_predictions_for_export(user, prediction_id=None):
+    predictions = Prediction.query.filter_by(user_id=user.id).order_by(Prediction.created_at.desc()).all()
+    if prediction_id and prediction_id > 0:
+        predictions = [p for p in predictions if p.id == prediction_id]
+    records = HealthRecord.query.filter_by(user_id=user.id).all()
+    if prediction_id and prediction_id > 0:
+        record_ids = {p.health_record_id for p in predictions}
+        records = [r for r in records if r.id in record_ids]
+    return predictions, records
+
+
+@main_bp.route("/export-report", methods=["GET", "POST"])
+@login_required
+@role_required("patient")
+def export_report():
+    """UC_05: Export Health Report with PDF/CSV format selection."""
+    form = ExportReportForm()
+    predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(
+        Prediction.created_at.desc()
+    ).all()
+    form.prediction_id.choices = [(0, "All prediction history")] + [
+        (p.id, f"{p.created_at.strftime('%Y-%m-%d %H:%M')} — {p.risk_level} ({p.probability:.0%})")
+        for p in predictions
+    ]
+    if not predictions:
+        flash("No predictions available to export. Complete a risk prediction first.", "info")
+        return redirect(url_for("main.health_data"))
+
+    if form.validate_on_submit():
+        selected = form.prediction_id.data
+        preds, records = _filter_predictions_for_export(current_user, selected)
+        if form.report_format.data == "csv":
+            csv_data = generate_csv_report(current_user, preds, records)
+            log_audit("export_csv", "report", f"scope={selected}")
+            return send_file(
+                BytesIO(csv_data.encode("utf-8")), mimetype="text/csv",
+                as_attachment=True, download_name=f"diabetes_report_{current_user.username}.csv",
+            )
+        metrics = ModelMetrics.query.order_by(ModelMetrics.f1_score.desc()).all()
+        pdf_buffer = generate_pdf_report(current_user, preds, records, metrics)
+        log_audit("export_pdf", "report", f"scope={selected}")
+        return send_file(
+            pdf_buffer, mimetype="application/pdf",
+            as_attachment=True, download_name=f"diabetes_report_{current_user.username}.pdf",
+        )
+
+    return render_template("export_report.html", form=form)
+
+
 @main_bp.route("/reports/csv")
 @login_required
 @role_required("patient")
 def export_csv():
-    predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(Prediction.created_at.desc()).all()
-    records = HealthRecord.query.filter_by(user_id=current_user.id).all()
+    prediction_id = request.args.get("prediction_id", type=int)
+    predictions, records = _filter_predictions_for_export(current_user, prediction_id)
     csv_data = generate_csv_report(current_user, predictions, records)
     log_audit("export_csv", "report")
     return send_file(
@@ -401,8 +466,8 @@ def export_csv():
 @login_required
 @role_required("patient")
 def export_pdf():
-    predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(Prediction.created_at.desc()).all()
-    records = HealthRecord.query.filter_by(user_id=current_user.id).all()
+    prediction_id = request.args.get("prediction_id", type=int)
+    predictions, records = _filter_predictions_for_export(current_user, prediction_id)
     metrics = ModelMetrics.query.order_by(ModelMetrics.f1_score.desc()).all()
     pdf_buffer = generate_pdf_report(current_user, predictions, records, metrics)
     log_audit("export_pdf", "report")

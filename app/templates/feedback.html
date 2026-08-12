@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Feedback{% endblock %}
 {% block content %}
-<h2 class="mb-4">Send Feedback to Admin</h2>
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-4">Feedback Submission (FR-14)</h2>
 <div class="row justify-content-center">
     <div class="col-md-7">
         <div class="card shadow-sm">
             <div class="card-body">
-                <p class="text-muted">Share your experience and any verified clinical outcomes. Your feedback is sent directly to the administrator to improve the system.</p>
+                <p class="text-muted">Users and clinicians can submit feedback on prediction accuracy and system utility.</p>
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     <div class="mb-3">{{ form.prediction_id.label(class="form-label") }}{{ form.prediction_id(class="form-select") }}</div>

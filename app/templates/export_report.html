@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Export Health Report{% endblock %}
+{% block content %}
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-2">Export Health Report (FR-11)</h2>
+<p class="text-muted mb-4">UC_05 — Select report scope and preferred layout (PDF or CSV), then download.</p>
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field, errors in form.errors.items() %}
+                        {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">{{ form.prediction_id.label(class="form-label fw-semibold") }}{{ form.prediction_id(class="form-select") }}</div>
+                    <div class="mb-4">{{ form.report_format.label(class="form-label fw-semibold") }}{{ form.report_format(class="form-select") }}</div>
+                    {{ form.submit(class="btn btn-primary btn-lg w-100") }}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -173,7 +173,7 @@ def train_all_models(df, model_folder, test_size=0.3, random_state=42):
     )
 
     results = []
-    best_auc = -1.0
+    best_f1 = -1.0
     best_model_name = None
     production_name = (
         "Logistic Regression"
@@ -204,8 +204,8 @@ def train_all_models(df, model_folder, test_size=0.3, random_state=42):
         safe_name = name.lower().replace(" ", "_")
         joblib.dump(pipe, os.path.join(model_folder, f"{safe_name}.joblib"))
 
-        if metrics["roc_auc"] > best_auc:
-            best_auc = metrics["roc_auc"]
+        if metrics["f1_score"] > best_f1:
+            best_f1 = metrics["f1_score"]
             best_model_name = name
 
     for r in results:

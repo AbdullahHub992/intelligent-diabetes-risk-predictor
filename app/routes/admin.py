@@ -8,7 +8,10 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from app.decorators import role_required
-from app.forms import AssignDoctorPatientForm, EducationForm, ForwardReportToDoctorsForm, ModelSelectForm, ResetPasswordForm, UserEditForm
+from app.forms import (
+    AssignDoctorPatientForm, CreateUserForm, DatasetUploadForm, EducationForm,
+    ForwardReportToDoctorsForm, ModelSelectForm, ResetPasswordForm, UserEditForm,
+)
 from app.ml.pipeline import MODEL_BUILDERS, clean_data, generate_eda, load_dataset, train_all_models
 from app.ml.predictor import clear_model_cache
 from app.ml.retrain import retrain_with_feedback
@@ -52,41 +55,111 @@ def admin_dashboard():
     )
 
 
+def _activate_dataset(filename, rows):
+    for existing in Dataset.query.filter_by(is_active=True).all():
+        existing.is_active = False
+    ds = Dataset(
+        filename=filename,
+        rows=rows,
+        uploaded_by=current_user.id,
+        is_active=True,
+    )
+    db.session.add(ds)
+    db.session.commit()
+    return ds
+
+
+def _process_dataset_file(filepath, filename):
+    """Validate, activate, and run EDA. Returns (ok: bool, message: str)."""
+    df = load_dataset(filepath)
+    valid, msg = validate_dataset_columns(df.columns)
+    if not valid:
+        return False, msg
+    df = clean_data(df)
+    rows = len(df)
+    if rows < 10:
+        return False, "Dataset must contain at least 10 valid rows after cleaning."
+    _activate_dataset(filename, rows)
+    try:
+        generate_eda(df, current_app.config["PLOT_FOLDER"])
+    except Exception as eda_err:
+        log_audit("upload_dataset", "dataset", f"{filename} (EDA warning: {eda_err})")
+        return True, (
+            f"Dataset '{filename}' imported ({rows} rows), but EDA charts failed: {eda_err}. "
+            "You can still train models."
+        )
+    log_audit("upload_dataset", "dataset", filename)
+    return True, f"Dataset '{filename}' imported successfully ({rows} rows). Schema validated."
+
+
 @admin_bp.route("/upload-dataset", methods=["GET", "POST"])
 @login_required
 @role_required("admin")
 def upload_dataset():
-    if request.method == "POST":
-        file = request.files.get("dataset")
-        if not file or not file.filename.lower().endswith(".csv"):
-            flash("Please upload a valid CSV file.", "danger")
-            return redirect(url_for("admin.upload_dataset"))
+    form = DatasetUploadForm()
+    active = Dataset.query.filter_by(is_active=True).order_by(Dataset.uploaded_at.desc()).first()
+    datasets = Dataset.query.order_by(Dataset.uploaded_at.desc()).limit(10).all()
 
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-        file.save(filepath)
+    if form.validate_on_submit():
+        upload_dir = current_app.config["UPLOAD_FOLDER"]
+        os.makedirs(upload_dir, exist_ok=True)
 
-        try:
-            df = load_dataset(filepath)
-            valid, msg = validate_dataset_columns(df.columns)
-            if not valid:
-                os.remove(filepath)
-                flash(msg, "danger")
+        # One-click: load built-in Pima diabetes CSV already in the project.
+        if form.use_sample.data:
+            sample_name = "diabetes.csv"
+            sample_path = os.path.join(upload_dir, sample_name)
+            if not os.path.exists(sample_path):
+                flash(
+                    "Built-in sample not found. Place diabetes.csv in the data/ folder, "
+                    "or upload a CSV manually.",
+                    "danger",
+                )
+                return redirect(url_for("admin.upload_dataset"))
+            try:
+                ok, message = _process_dataset_file(sample_path, sample_name)
+                flash(message, "success" if ok else "danger")
+                return redirect(url_for("admin.eda") if ok else url_for("admin.upload_dataset"))
+            except Exception as e:
+                flash(f"Error loading sample dataset: {e}", "danger")
                 return redirect(url_for("admin.upload_dataset"))
 
-            df = clean_data(df)
-            rows = len(df)
-            Dataset.query.update({Dataset.is_active: False})
-            ds = Dataset(filename=filename, rows=rows, uploaded_by=current_user.id, is_active=True)
-            db.session.add(ds)
-            db.session.commit()
-            generate_eda(df, current_app.config["PLOT_FOLDER"])
-            log_audit("upload_dataset", "dataset", filename)
-            flash(f"Dataset '{filename}' uploaded ({rows} rows). Schema validated.", "success")
+        file = form.dataset.data or request.files.get("dataset")
+        if not file or not getattr(file, "filename", None):
+            flash("Please choose a CSV file, or click Load Built-in Sample Dataset.", "danger")
+            return redirect(url_for("admin.upload_dataset"))
+
+        original = file.filename
+        if not original.lower().endswith(".csv"):
+            flash("Please upload a .csv file (Excel .xlsx is not supported).", "danger")
+            return redirect(url_for("admin.upload_dataset"))
+
+        filename = secure_filename(original) or "uploaded_dataset.csv"
+        if not filename.lower().endswith(".csv"):
+            filename += ".csv"
+        filepath = os.path.join(upload_dir, filename)
+        try:
+            file.save(filepath)
+            ok, message = _process_dataset_file(filepath, filename)
+            if not ok:
+                if os.path.exists(filepath) and filename != "diabetes.csv":
+                    try:
+                        os.remove(filepath)
+                    except OSError:
+                        pass
+                flash(message, "danger")
+                return redirect(url_for("admin.upload_dataset"))
+            flash(message, "success" if "successfully" in message else "warning")
+            return redirect(url_for("admin.eda"))
         except Exception as e:
             flash(f"Error processing dataset: {e}", "danger")
+            return redirect(url_for("admin.upload_dataset"))
 
-    return render_template("admin/upload_dataset.html")
+    return render_template(
+        "admin/upload_dataset.html",
+        form=form,
+        active=active,
+        datasets=datasets,
+    )
 
 
 @admin_bp.route("/eda")
@@ -95,12 +168,34 @@ def upload_dataset():
 def eda():
     active = Dataset.query.filter_by(is_active=True).first()
     eda_results = None
+    preprocess_info = None
     if active:
         filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], active.filename)
         if os.path.exists(filepath):
-            df = clean_data(load_dataset(filepath))
+            df_raw = load_dataset(filepath)
+            df = clean_data(df_raw)
             eda_results = generate_eda(df, current_app.config["PLOT_FOLDER"])
-    return render_template("admin/eda.html", active_dataset=active, eda_results=eda_results)
+            n = len(df)
+            train_n = int(n * (1 - current_app.config["TRAIN_TEST_SPLIT"]))
+            test_n = n - train_n
+            preprocess_info = {
+                "raw_rows": len(df_raw),
+                "clean_rows": n,
+                "steps": [
+                    "Replace zeros with NaN in Glucose, BP, SkinThickness, Insulin, BMI",
+                    "Impute missing values with column median",
+                    "StandardScaler normalization on numeric features",
+                    f"Random 70/30 stratified train-test split ({train_n} train / {test_n} test)",
+                ],
+                "train_pct": 70,
+                "test_pct": 30,
+            }
+    return render_template(
+        "admin/eda.html",
+        active_dataset=active,
+        eda_results=eda_results,
+        preprocess_info=preprocess_info,
+    )
 
 
 @admin_bp.route("/eda/export-pdf")
@@ -216,6 +311,38 @@ def manage_users():
     return render_template("admin/users.html", users=users)
 
 
+@admin_bp.route("/users/create", methods=["GET", "POST"])
+@login_required
+@role_required("admin")
+def create_user():
+    form = CreateUserForm()
+    if form.validate_on_submit():
+        if User.query.filter_by(username=form.username.data).first():
+            flash("Username already exists.", "danger")
+        elif User.query.filter_by(email=form.email.data).first():
+            flash("Email already registered.", "danger")
+        elif form.role.data == "provider" and not (form.professional_credentials.data or "").strip():
+            flash("Healthcare providers require professional credentials.", "danger")
+        else:
+            user = User(
+                username=form.username.data,
+                email=form.email.data,
+                full_name=form.full_name.data,
+                role=form.role.data,
+                professional_credentials=(form.professional_credentials.data or "").strip() or None,
+                security_question="city",
+                is_active=True,
+            )
+            user.set_password(form.password.data)
+            user.set_security_answer(form.username.data)
+            db.session.add(user)
+            db.session.commit()
+            log_audit("create_user", "user", f"username={user.username}, role={user.role}")
+            flash(f"User '{user.username}' created.", "success")
+            return redirect(url_for("admin.manage_users"))
+    return render_template("admin/create_user.html", form=form)
+
+
 @admin_bp.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
 @login_required
 @role_required("admin")
@@ -226,6 +353,7 @@ def edit_user(user_id):
         user.full_name = form.full_name.data
         user.email = form.email.data
         user.role = form.role.data
+        user.professional_credentials = (form.professional_credentials.data or "").strip() or None
         user.is_active = form.is_active.data
         db.session.commit()
         log_audit("edit_user", "user", f"id={user_id}")
@@ -253,43 +381,17 @@ def reset_user_password(user_id):
 @login_required
 @role_required("admin")
 def manage_assignments():
-    providers = User.query.filter_by(role="provider", is_active=True).all()
-    patients = User.query.filter_by(role="patient", is_active=True).all()
-    assignments = ProviderPatient.query.all()
-    form = AssignDoctorPatientForm()
-    form.provider_id.choices = [(p.id, f"{p.full_name} (@{p.username})") for p in providers]
-    form.patient_id.choices = [(p.id, f"{p.full_name} (@{p.username})") for p in patients]
-
-    if form.validate_on_submit():
-        provider_id = form.provider_id.data
-        patient_id = form.patient_id.data
-        if ProviderPatient.query.filter_by(provider_id=provider_id, patient_id=patient_id).first():
-            flash("This patient is already assigned to that doctor.", "warning")
-        else:
-            db.session.add(ProviderPatient(provider_id=provider_id, patient_id=patient_id))
-            db.session.commit()
-            provider = User.query.get(provider_id)
-            patient = User.query.get(patient_id)
-            log_audit("assign_patient", "assignment", f"doctor={provider.username}, patient={patient.username}")
-            flash(f"Success! {patient.full_name} is now assigned to {provider.full_name}.", "success")
-        return redirect(url_for("admin.manage_assignments"))
-
-    return render_template(
-        "admin/assignments.html",
-        form=form,
-        providers=providers, patients=patients, assignments=assignments,
-    )
+    # Not an SRS Admin requirement — hidden from UI; redirect if opened directly.
+    flash("Doctor assignment is not part of the SRS Admin scope.", "info")
+    return redirect(url_for("admin.admin_dashboard"))
 
 
 @admin_bp.route("/assignments/<int:assignment_id>/delete", methods=["POST"])
 @login_required
 @role_required("admin")
 def delete_assignment(assignment_id):
-    row = ProviderPatient.query.get_or_404(assignment_id)
-    db.session.delete(row)
-    db.session.commit()
-    flash("Doctor–patient link removed.", "info")
-    return redirect(url_for("admin.manage_assignments"))
+    flash("Doctor assignment is not part of the SRS Admin scope.", "info")
+    return redirect(url_for("admin.admin_dashboard"))
 
 
 @admin_bp.route("/education")

@@ -16,8 +16,8 @@ HEALTH_FIELD_INFO = {
         "unit": "",
     },
     "glucose": {
-        "label": "Fasting Blood Sugar",
-        "help": "Blood sugar measured after fasting (empty stomach), in mg/dL. Normal: 70–100. High: above 140.",
+        "label": "Glucose",
+        "help": "Fasting blood glucose level in mg/dL. Normal: 70–100. Prediabetes: 100–125. Diabetes: 140+.",
         "average": 95,
         "min": 0,
         "max": 300,

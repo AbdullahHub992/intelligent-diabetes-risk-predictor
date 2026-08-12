@@ -17,7 +17,7 @@
       ]
     ],
     "confusion_matrix_plot": "plots/cm_neural_network.png",
-    "is_best": true
+    "is_best": false
   },
   {
     "model_name": "SVM",
@@ -77,6 +77,6 @@
       ]
     ],
     "confusion_matrix_plot": "plots/cm_logistic_regression.png",
-    "is_best": false
+    "is_best": true
   }
 ]

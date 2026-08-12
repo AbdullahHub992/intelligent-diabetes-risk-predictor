@@ -1,41 +1,43 @@
 {% extends "base.html" %}
 {% block title %}My Profile{% endblock %}
 {% block content %}
+{% include 'includes/srs_page_header.html' %}
 <div class="row justify-content-center">
-    <div class="col-lg-7">
+    <div class="col-lg-8">
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h3 class="mb-2">My Profile</h3>
+                <h3 class="mb-2">User Profile Management (FR-05)</h3>
                 <p class="text-muted mb-4">
-                    Update your account details. You are logged in as
-                    <strong>{{ current_user.role | replace('provider', 'Doctor') | title }}</strong>.
+                    View and update profile details, contact information, baseline physical metrics, and password.
+                    Role: <strong>{{ current_user.role | replace('provider', 'Healthcare Provider') | title }}</strong>.
                 </p>
                 <form method="POST">
                     {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        {{ form.full_name.label(class="form-label fw-semibold") }}
-                        {{ form.full_name(class="form-control") }}
+                    <h6 class="mb-3">Contact Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">{{ form.full_name.label(class="form-label fw-semibold") }}{{ form.full_name(class="form-control") }}</div>
+                        <div class="col-md-6 mb-3">{{ form.username.label(class="form-label fw-semibold") }}{{ form.username(class="form-control") }}</div>
                     </div>
-                    <div class="mb-3">
-                        {{ form.username.label(class="form-label fw-semibold") }}
-                        {{ form.username(class="form-control") }}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">{{ form.email.label(class="form-label fw-semibold") }}{{ form.email(class="form-control") }}</div>
+                        <div class="col-md-6 mb-3">{{ form.phone.label(class="form-label fw-semibold") }}{{ form.phone(class="form-control") }}</div>
                     </div>
-                    <div class="mb-3">
-                        {{ form.email.label(class="form-label fw-semibold") }}
-                        {{ form.email(class="form-control") }}
-                    </div>
+                    <div class="mb-3">{{ form.address.label(class="form-label fw-semibold") }}{{ form.address(class="form-control") }}</div>
+                    {% if current_user.is_provider %}
+                    <div class="mb-3">{{ form.professional_credentials.label(class="form-label fw-semibold") }}{{ form.professional_credentials(class="form-control") }}</div>
+                    {% endif %}
                     <hr>
-                    <p class="text-muted small">Leave password fields blank to keep your current password.</p>
-                    <div class="mb-3">
-                        {{ form.new_password.label(class="form-label fw-semibold") }}
-                        {{ form.new_password(class="form-control") }}
-                    </div>
-                    <div class="mb-4">
-                        {{ form.confirm_password.label(class="form-label fw-semibold") }}
-                        {{ form.confirm_password(class="form-control") }}
+                    <h6 class="mb-3">Baseline Physical Metrics</h6>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">{{ form.baseline_height_cm.label(class="form-label fw-semibold") }}{{ form.baseline_height_cm(class="form-control") }}</div>
+                        <div class="col-md-3 mb-3">{{ form.baseline_weight_kg.label(class="form-label fw-semibold") }}{{ form.baseline_weight_kg(class="form-control") }}</div>
+                        <div class="col-md-3 mb-3">{{ form.baseline_age.label(class="form-label fw-semibold") }}{{ form.baseline_age(class="form-control") }}</div>
+                        <div class="col-md-3 mb-3">{{ form.baseline_sex.label(class="form-label fw-semibold") }}{{ form.baseline_sex(class="form-select") }}</div>
                     </div>
                     {{ form.submit(class="btn btn-primary btn-lg") }}
                 </form>
+                <hr>
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-secondary">Change Password (UC_06)</a>
             </div>
         </div>
     </div>

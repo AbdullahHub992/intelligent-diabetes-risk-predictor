@@ -5,6 +5,18 @@ from app import db
 from app.models import AdminReportSubmission, AuditLog, DoctorReportForward, DoctorReportRemark, Feedback, ProviderPatient, SystemConfig
 
 
+SECURITY_QUESTION_LABELS = {
+    "pet": "What is the name of your first pet?",
+    "city": "In what city were you born?",
+    "school": "What is the name of your primary school?",
+    "mother": "What is your mother's maiden name?",
+}
+
+
+def security_question_text(key):
+    return SECURITY_QUESTION_LABELS.get(key, key or "Security question")
+
+
 def role_home_url():
     if not current_user.is_authenticated:
         return url_for("main.index")

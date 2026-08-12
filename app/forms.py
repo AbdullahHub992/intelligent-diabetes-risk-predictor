@@ -25,6 +25,24 @@ class ProfileSettingsForm(FlaskForm):
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField("Email", validators=[DataRequired(), Email()])
+    phone = StringField("Phone", validators=[Optional(), Length(max=30)])
+    address = StringField("Address", validators=[Optional(), Length(max=255)])
+    baseline_height_cm = FloatField("Baseline Height (cm)", validators=[Optional(), NumberRange(min=50, max=250)])
+    baseline_weight_kg = FloatField("Baseline Weight (kg)", validators=[Optional(), NumberRange(min=20, max=300)])
+    baseline_age = IntegerField("Baseline Age", validators=[Optional(), NumberRange(min=1, max=120)])
+    baseline_sex = SelectField(
+        "Baseline Sex",
+        choices=[("", "Not set"), ("female", "Female"), ("male", "Male")],
+        validators=[Optional()],
+    )
+    professional_credentials = StringField(
+        "Professional Credentials",
+        validators=[Optional(), Length(max=200)],
+    )
+    current_password = PasswordField(
+        "Current Password",
+        validators=[Optional(), Length(min=8)],
+    )
     new_password = PasswordField(
         "New Password",
         validators=[Optional(), Length(min=8)],
@@ -36,7 +54,81 @@ class ProfileSettingsForm(FlaskForm):
     submit = SubmitField("Save Profile")
 
 
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField("Current Password", validators=[DataRequired()])
+    new_password = PasswordField("New Password", validators=[DataRequired(), Length(min=8)])
+    confirm_password = PasswordField(
+        "Confirm New Password",
+        validators=[DataRequired(), EqualTo("new_password", message="Passwords must match")],
+    )
+    submit = SubmitField("Update Password")
+
+
 class RegisterForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
+    role = SelectField(
+        "Register As",
+        choices=[
+            ("patient", "Patient"),
+            ("provider", "Healthcare Provider"),
+        ],
+        validators=[DataRequired()],
+        default="patient",
+    )
+    professional_credentials = StringField(
+        "Professional Credentials (for healthcare providers)",
+        validators=[Optional(), Length(max=200)],
+    )
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
+    confirm_password = PasswordField(
+        "Confirm Password",
+        validators=[DataRequired(), EqualTo("password", message="Passwords must match")],
+    )
+    security_question = SelectField(
+        "Security Question (for password recovery)",
+        choices=[
+            ("pet", "What is the name of your first pet?"),
+            ("city", "In what city were you born?"),
+            ("school", "What is the name of your primary school?"),
+            ("mother", "What is your mother's maiden name?"),
+        ],
+        validators=[DataRequired()],
+    )
+    security_answer = StringField(
+        "Security Answer",
+        validators=[DataRequired(), Length(min=2, max=120)],
+    )
+    consent = BooleanField(
+        "I consent to secure storage of my health data for diabetes risk assessment",
+        validators=[DataRequired()],
+    )
+    submit = SubmitField("Register")
+
+
+class ForgotPasswordLookupForm(FlaskForm):
+    login = StringField("Username or Email", validators=[DataRequired()])
+    submit = SubmitField("Continue")
+
+
+class ForgotPasswordForm(FlaskForm):
+    security_answer = StringField("Security Answer", validators=[DataRequired(), Length(min=2, max=120)])
+    new_password = PasswordField("New Password", validators=[DataRequired(), Length(min=8)])
+    confirm_password = PasswordField(
+        "Confirm New Password",
+        validators=[DataRequired(), EqualTo("new_password", message="Passwords must match")],
+    )
+    submit = SubmitField("Reset Password")
+
+
+class ForgotPasswordEmailForm(FlaskForm):
+    email = StringField("Email Address", validators=[DataRequired(), Email()])
+    submit = SubmitField("Send Reset Link")
+
+
+class AdminRegisterForm(FlaskForm):
+    owner_access_code = StringField("Owner Access Code", validators=[DataRequired(), Length(min=4, max=80)])
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
@@ -45,11 +137,56 @@ class RegisterForm(FlaskForm):
         "Confirm Password",
         validators=[DataRequired(), EqualTo("password", message="Passwords must match")],
     )
-    consent = BooleanField(
-        "I consent to secure storage of my health data for diabetes risk assessment",
+    security_question = SelectField(
+        "Security Question",
+        choices=[
+            ("pet", "What is the name of your first pet?"),
+            ("city", "In what city were you born?"),
+            ("school", "What is the name of your primary school?"),
+            ("mother", "What is your mother's maiden name?"),
+        ],
         validators=[DataRequired()],
     )
-    submit = SubmitField("Register")
+    security_answer = StringField("Security Answer", validators=[DataRequired(), Length(min=2, max=120)])
+    submit = SubmitField("Register Admin")
+
+
+class CreateUserForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
+    role = SelectField("Role", choices=[
+        ("patient", "Patient"),
+        ("provider", "Healthcare Provider"),
+        ("admin", "Administrator"),
+    ])
+    professional_credentials = StringField("Professional Credentials", validators=[Optional(), Length(max=200)])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
+    confirm_password = PasswordField(
+        "Confirm Password",
+        validators=[DataRequired(), EqualTo("password", message="Passwords must match")],
+    )
+    submit = SubmitField("Create User")
+
+
+class ExportReportForm(FlaskForm):
+    prediction_id = SelectField(
+        "Report Scope",
+        coerce=int,
+        validators=[InputRequired()],
+    )
+    report_format = SelectField(
+        "Preferred Layout",
+        choices=[("pdf", "PDF"), ("csv", "CSV")],
+        validators=[DataRequired()],
+    )
+    submit = SubmitField("Export Health Report")
+
+
+class DatasetUploadForm(FlaskForm):
+    dataset = FileField("Dataset CSV", validators=[Optional()])
+    submit = SubmitField("Upload Dataset")
+    use_sample = SubmitField("Load Built-in Sample Dataset")
 
 
 class HealthDataForm(FlaskForm):
@@ -78,8 +215,8 @@ class HealthDataForm(FlaskForm):
         default=0,
     )
     glucose = FloatField(
-        "Fasting Blood Sugar",
-        validators=[DataRequired(), NumberRange(min=0, max=300, message="Fasting sugar must be between 0 and 300")],
+        "Glucose (Fasting Blood Sugar)",
+        validators=[DataRequired(), NumberRange(min=0, max=300, message="Glucose must be between 0 and 300 mg/dL")],
         default=95,
     )
     systolic = FloatField(
@@ -122,8 +259,38 @@ class HealthDataForm(FlaskForm):
         validators=[DataRequired(), NumberRange(min=1, max=120, message="Age must be between 1 and 120")],
         default=33,
     )
+    smoking = SelectField(
+        "Smoking Habit",
+        choices=[
+            ("never", "Never smoked"),
+            ("former", "Former smoker"),
+            ("current", "Current smoker"),
+        ],
+        validators=[DataRequired()],
+        default="never",
+    )
+    physical_activity = SelectField(
+        "Physical Activity",
+        choices=[
+            ("active", "Active (150+ min/week)"),
+            ("moderate", "Moderate (some exercise)"),
+            ("sedentary", "Sedentary (little exercise)"),
+        ],
+        validators=[DataRequired()],
+        default="moderate",
+    )
+    diet_quality = SelectField(
+        "Diet Quality",
+        choices=[
+            ("healthy", "Healthy (balanced diet)"),
+            ("average", "Average"),
+            ("poor", "Poor (high sugar/processed food)"),
+        ],
+        validators=[DataRequired()],
+        default="average",
+    )
     model_choice = SelectField("Prediction Model", choices=[], validators=[Optional()])
-    submit = SubmitField("Submit & Get Prediction")
+    submit = SubmitField("Generate Prediction")
 
     def validate(self, extra_validators=None):
         if not super().validate(extra_validators):
@@ -181,6 +348,7 @@ class UserEditForm(FlaskForm):
     role = SelectField("Role", choices=[
         ("patient", "Patient"), ("provider", "Healthcare Provider"), ("admin", "Administrator"),
     ])
+    professional_credentials = StringField("Professional Credentials", validators=[Optional(), Length(max=200)])
     is_active = BooleanField("Active Account")
     submit = SubmitField("Save Changes")
 
@@ -233,8 +401,3 @@ class AssignPatientForm(FlaskForm):
 class ModelSelectForm(FlaskForm):
     production_model = SelectField("Production Model", choices=[], validators=[DataRequired()])
     submit = SubmitField("Set Production Model")
-
-
-class DatasetUploadForm(FlaskForm):
-    dataset = FileField("CSV Dataset", validators=[FileRequired()])
-    submit = SubmitField("Upload Dataset")

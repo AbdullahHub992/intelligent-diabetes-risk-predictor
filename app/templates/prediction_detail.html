@@ -1,7 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Prediction Details{% endblock %}
+{% block title %}Risk Factor Analysis{% endblock %}
 {% block content %}
-<h2 class="mb-4">Diabetes Prediction Details</h2>
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-2">Risk Factor Analysis &amp; Explanation</h2>
+<p class="text-muted mb-4">Interpretable explanation of key features contributing to your prediction (UC_03: Explain Result).</p>
 <div class="row g-4">
     <div class="col-md-5">
         <div class="card shadow-sm">
@@ -21,7 +23,7 @@
             <div class="card-header">Health Values Used</div>
             <ul class="list-group list-group-flush small">
                 <li class="list-group-item d-flex justify-content-between"><span>Sex</span><strong>{{ record.sex | capitalize if record.sex else '—' }}</strong></li>
-                <li class="list-group-item d-flex justify-content-between"><span>Fasting Blood Sugar</span><strong>{{ record.glucose }} mg/dL</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Glucose</span><strong>{{ record.glucose }} mg/dL</strong></li>
                 <li class="list-group-item d-flex justify-content-between"><span>Blood Pressure</span><strong>{{ record.systolic | int }}/{{ record.diastolic | int }} mmHg</strong></li>
                 <li class="list-group-item d-flex justify-content-between"><span>BMI</span><strong>{{ record.bmi }}</strong></li>
                 <li class="list-group-item d-flex justify-content-between"><span>Age</span><strong>{{ record.age }}</strong></li>
@@ -34,7 +36,7 @@
     </div>
     <div class="col-md-7">
         <div class="card shadow-sm">
-            <div class="card-header">Why this diabetes probability?</div>
+            <div class="card-header">Explain Result — Why this risk level?</div>
             <ul class="list-group list-group-flush">
                 {% for factor in explanation %}
                 <li class="list-group-item">

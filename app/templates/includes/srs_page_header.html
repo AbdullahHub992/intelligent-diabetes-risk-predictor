@@ -1,0 +1,12 @@
+{% if page_srs %}
+<div class="srs-page-header mb-3">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <span class="badge rounded-pill bg-primary">{{ page_srs.id }}</span>
+        {% if page_srs.uc %}
+        <span class="badge rounded-pill bg-secondary">{{ page_srs.uc }}</span>
+        {% endif %}
+        <span class="small fw-semibold text-primary">{{ page_srs.title }}</span>
+    </div>
+    <p class="text-muted small mb-0">{{ page_srs.description }}</p>
+</div>
+{% endif %}

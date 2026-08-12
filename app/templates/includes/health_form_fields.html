@@ -15,16 +15,18 @@
             <br><small class="text-muted">{{ field_info.pregnancies.help }}</small>
         </div>
     </div>
+    <div class="col-12">
+        <div class="border rounded p-3 bg-white border-danger border-opacity-25">
+            <label class="form-label fw-semibold fs-5 mb-1">{{ field_info.glucose.label }}</label>
+            {{ form.glucose(class="form-control form-control-lg", type="number", step="1", id="glucose", min=field_info.glucose.min, max=field_info.glucose.max, placeholder=field_info.glucose.placeholder) }}
+            <div class="field-hint mt-2">
+                <span class="avg-badge">Average: {{ field_info.glucose.average }} {{ field_info.glucose.unit }}</span>
+                <small class="text-muted d-block">{{ field_info.glucose.help }}</small>
+            </div>
+        </div>
+    </div>
     <div class="col-md-6">
         <div class="lab-stack">
-            <div class="mb-3">
-                <label class="form-label fw-semibold">{{ field_info.glucose.label }}</label>
-                {{ form.glucose(class="form-control", type="number", step="1", id="glucose", min=field_info.glucose.min, max=field_info.glucose.max, placeholder=field_info.glucose.placeholder) }}
-                <div class="field-hint">
-                    <span class="avg-badge">Average: {{ field_info.glucose.average }} {{ field_info.glucose.unit }}</span>
-                    <small class="text-muted d-block">{{ field_info.glucose.help }}</small>
-                </div>
-            </div>
             <div class="mb-3">
                 <label class="form-label fw-semibold">{{ field_info.insulin.label }}</label>
                 {{ form.insulin(class="form-control", type="number", step="1", id="insulin", min=field_info.insulin.min, max=field_info.insulin.max, placeholder=field_info.insulin.placeholder) }}
@@ -87,5 +89,21 @@
         <div class="field-hint">
             <span class="avg-badge">Average: {{ field_info.age.average }} {{ field_info.age.unit }}</span>
         </div>
+    </div>
+</div>
+<hr class="my-3">
+<h6 class="fw-semibold mb-3">Lifestyle &amp; Habits</h6>
+<div class="row g-3">
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">{{ form.smoking.label.text }}</label>
+        {{ form.smoking(class="form-select") }}
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">{{ form.physical_activity.label.text }}</label>
+        {{ form.physical_activity(class="form-select") }}
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">{{ form.diet_quality.label.text }}</label>
+        {{ form.diet_quality(class="form-select") }}
     </div>
 </div>

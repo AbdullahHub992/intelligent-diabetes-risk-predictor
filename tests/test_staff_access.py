@@ -28,16 +28,15 @@ def test_staff_login_requires_owner_code():
     assert b"Invalid owner access code" in response.data
 
 
-def test_staff_login_and_profile():
+def test_user_login_and_profile():
     app = create_app()
     client = app.test_client()
-    token = _csrf_token(client, "/login/doctor")
+    token = _csrf_token(client, "/login/user")
     response = client.post(
-        "/login/doctor",
+        "/login/user",
         data={
             "username": "doctor",
             "password": "doctor123",
-            "owner_access_code": "doctor2026",
             "csrf_token": token,
             "submit": "Login",
         },

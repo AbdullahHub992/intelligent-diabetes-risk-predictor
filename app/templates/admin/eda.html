@@ -1,10 +1,26 @@
 {% extends "base.html" %}
 {% block title %}EDA{% endblock %}
 {% block content %}
-<h2 class="mb-4">Data Analysis & Visualization</h2>
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-4">Perform EDA &amp; Preprocessing (FR-17)</h2>
 {% if active_dataset %}
 <p>Dataset: <strong>{{ active_dataset.filename }}</strong> ({{ active_dataset.rows }} rows)
 <a href="{{ url_for('admin.export_eda_pdf') }}" class="btn btn-sm btn-outline-danger ms-2">Export EDA PDF</a></p>
+{% endif %}
+{% if preprocess_info %}
+<div class="card shadow-sm mb-4 border-primary">
+    <div class="card-header fw-semibold">Data Preprocessing Pipeline</div>
+    <div class="card-body">
+        <p class="mb-2">Raw rows: <strong>{{ preprocess_info.raw_rows }}</strong> → Clean rows: <strong>{{ preprocess_info.clean_rows }}</strong></p>
+        <ul class="mb-2">
+            {% for step in preprocess_info.steps %}
+            <li>{{ step }}</li>
+            {% endfor %}
+        </ul>
+        <span class="badge bg-primary">Train {{ preprocess_info.train_pct }}%</span>
+        <span class="badge bg-secondary">Test {{ preprocess_info.test_pct }}%</span>
+    </div>
+</div>
 {% endif %}
 {% if eda_results %}
 <div class="row g-4">

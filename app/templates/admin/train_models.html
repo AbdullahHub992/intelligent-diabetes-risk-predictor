@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Train Models{% endblock %}
 {% block content %}
-<h2 class="mb-4">Machine Learning Model Training</h2>
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-4">Machine Learning Model Training (FR-18)</h2>
 <p>Trains Neural Network (MLP), SVM, Decision Tree, and Logistic Regression with 70/30 stratified split, feature scaling, and model persistence.</p>
 <form method="POST" class="mb-4">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="btn btn-success btn-lg">Train All Models</button>
+    <button type="submit" class="btn btn-success btn-lg">Execute Model Training Pipeline</button>
 </form>
 {% if metrics %}
 <div class="row g-4">

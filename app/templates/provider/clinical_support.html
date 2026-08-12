@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Clinical Support{% endblock %}
 {% block content %}
-<h2 class="mb-4">Clinical Decision Support</h2>
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-4">Clinical Decision Support (FR-13)</h2>
 <div class="alert alert-info">Supports clinical judgment — does not replace professional medical diagnosis.</div>
 <div class="row g-4">
     <div class="col-md-4">
@@ -10,7 +11,7 @@
             <div class="card-body">
                 <p><strong>{{ patient.full_name }}</strong></p>
                 <p>Sex: {{ record.sex | capitalize if record.sex else '—' }}</p>
-                <p>Fasting Sugar: {{ record.glucose }} mg/dL | BMI: {{ record.bmi }}</p>
+                <p>Glucose: {{ record.glucose }} mg/dL | BMI: {{ record.bmi }}</p>
                 <p>BP: {{ record.systolic | int }}/{{ record.diastolic | int }} mmHg | Age: {{ record.age }}</p>
                 <p>Insulin: {{ record.insulin }} | Family Diabetes: {% if record.diabetes_pedigree >= 1 %}Yes{% else %}No{% endif %}</p>
             </div>

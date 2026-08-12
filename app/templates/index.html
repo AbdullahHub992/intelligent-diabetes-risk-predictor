@@ -4,65 +4,90 @@
 <div class="home-page">
 <section class="home-hero text-center">
     <div class="home-hero-content">
-        <span class="home-hero-badge">CS619 Final Project</span>
         <h1 class="display-5 fw-bold">{{ app_name }}</h1>
         <p class="lead col-lg-9 mx-auto">
-            An ML-powered decision-support tool for early diabetes risk detection, continuous monitoring,
-            and preventive healthcare for patients and clinicians.
+            Predict the likelihood of diabetes using machine learning, data science, and clinical/lifestyle data.
+            Classify risk levels to assist patients and healthcare providers in early detection and preventive care.
+        </p>
+        <p class="small mb-0 opacity-75">
+            Group {{ project_group_id }} · {{ project_student }} ({{ project_student_id }}) · Supervisor: {{ project_supervisor }}
         </p>
     </div>
 </section>
 
 <section id="login" class="mb-5 home-section">
-    <h2 class="text-center mb-2">Sign In</h2>
-    <p class="text-center text-muted mb-4">Choose your role to access the right portal.</p>
+    <h2 class="text-center mb-4">Sign In</h2>
     <div class="row g-4 justify-content-center">
-        <div class="col-md-4">
-            <div class="card login-portal-card h-100 shadow-sm border-0 portal-patient">
+        <div class="col-md-5">
+            <div class="card login-portal-card h-100 shadow-sm border-0 portal-user">
                 <div class="card-body text-center p-4 d-flex flex-column">
-                    <div class="portal-icon mb-3">🩺</div>
-                    <h4 class="card-title">Patient</h4>
+                    <div class="portal-icon mb-3">👤</div>
+                    <h4 class="card-title">User Panel</h4>
                     <p class="card-text text-muted flex-grow-1">
-                        Enter health data, view predictions, track progress, and read education resources.
+                        For patients and healthcare providers — health data input, predictions, longitudinal tracking,
+                        dashboards, report export, education, clinical decision support, and feedback.
                     </p>
-                    <a href="{{ url_for('auth.login_patient') }}" class="btn btn-primary btn-lg w-100">Patient Login</a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-link mt-2">New patient? Register</a>
+                    <a href="{{ url_for('auth.user_login') }}" class="btn btn-primary btn-lg w-100">User Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-link mt-2">User Registration (UC_01)</a>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card login-portal-card h-100 shadow-sm border-0 portal-doctor">
-                <div class="card-body text-center p-4 d-flex flex-column">
-                    <div class="portal-icon mb-3">👨‍⚕️</div>
-                    <h4 class="card-title">Doctor</h4>
-                    <p class="card-text text-muted flex-grow-1">
-                        Restricted access. Owner-approved username, password, and access code required.
-                    </p>
-                    <a href="{{ url_for('auth.login_doctor') }}" class="btn btn-success btn-lg w-100">Doctor Login</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
+        <div class="col-md-5">
             <div class="card login-portal-card h-100 shadow-sm border-0 portal-admin">
                 <div class="card-body text-center p-4 d-flex flex-column">
                     <div class="portal-icon mb-3">⚙️</div>
-                    <h4 class="card-title">Admin</h4>
+                    <h4 class="card-title">Admin Panel</h4>
                     <p class="card-text text-muted flex-grow-1">
-                        Restricted access. Owner-approved username, password, and access code required.
+                        For the system administrator — dataset import, EDA, preprocessing, model training/comparison,
+                        user management, and system monitoring.
                     </p>
                     <a href="{{ url_for('auth.login_admin') }}" class="btn btn-dark btn-lg w-100">Admin Login</a>
+                    <a href="{{ url_for('auth.register_admin') }}" class="btn btn-link mt-2">Admin Registration (UC_08)</a>
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+<div class="row g-4 mb-4 home-section">
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm home-feature-card border-primary border-opacity-25">
+            <div class="card-header bg-primary bg-opacity-10 fw-semibold">User Panel</div>
+            <div class="card-body small">
+                <ul class="mb-0">
+                    <li>Secure login &amp; role-based access control</li>
+                    <li>Health data input &amp; diabetes risk prediction with confidence scores</li>
+                    <li>Risk factor analysis, personalized recommendations &amp; longitudinal tracking</li>
+                    <li>Interactive dashboard, PDF/CSV report export &amp; education resources</li>
+                    <li>Clinical decision support &amp; feedback submission</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm home-feature-card border-dark border-opacity-25">
+            <div class="card-header bg-dark bg-opacity-10 fw-semibold">Admin Panel</div>
+            <div class="card-body small">
+                <ul class="mb-0">
+                    <li>Import clinical datasets (e.g. Kaggle diabetic prediction)</li>
+                    <li>EDA, preprocessing &amp; 70/30 train-test split</li>
+                    <li>Train &amp; compare Neural Network, SVM, Decision Tree, Logistic Regression</li>
+                    <li>Model persistence, retraining &amp; account management</li>
+                    <li>Real-time system performance monitoring</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'includes/srs_requirements_section.html' %}
 
 <div class="row g-4 home-section pb-2">
     <div class="col-md-4">
         <div class="card h-100 shadow-sm home-feature-card">
             <div class="card-body">
                 <h5 class="card-title">ML Prediction</h5>
-                <p class="card-text">Neural Network, SVM, Decision Tree, and Logistic Regression models compared automatically.</p>
+                <p class="card-text">Neural Network, SVM, Decision Tree, and Logistic Regression compared automatically.</p>
             </div>
         </div>
     </div>

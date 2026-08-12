@@ -27,6 +27,11 @@ def _risk_level(probability):
     return "High"
 
 
+def _confidence_score(probability):
+    """Model certainty in the predicted class (0.5 = uncertain, 1.0 = fully confident)."""
+    return float(max(probability, 1.0 - probability))
+
+
 def _recommendations_json(risk_level, record, probability, explanation_json):
     plan = generate_recommendation_plan(record, probability, risk_level, explanation_json)
     return json.dumps(plan)
@@ -88,6 +93,7 @@ def predict_health_record(record, model_folder, model_name=None, *, for_patient=
     return {
         "model_name": model_name,
         "probability": proba,
+        "confidence_score": _confidence_score(proba),
         "risk_level": risk,
         "explanation": explanation_json,
         "recommendations": _recommendations_json(risk, record, proba, explanation_json),

@@ -8,8 +8,21 @@ def validate_dataset_columns(columns):
         "Blood Pressure": "BloodPressure",
         "Skin Thickness": "SkinThickness",
         "Diabetes Pedigree Function": "DiabetesPedigreeFunction",
+        "DiabetesPedigree": "DiabetesPedigreeFunction",
+        "BP": "BloodPressure",
+        "bloodpressure": "BloodPressure",
+        "glucose": "Glucose",
+        "bmi": "BMI",
+        "age": "Age",
+        "outcome": "Outcome",
+        "pregnancies": "Pregnancies",
+        "insulin": "Insulin",
+        "skinthickness": "SkinThickness",
     }
-    normalized = {rename.get(c, c) for c in present}
+    normalized = set()
+    for c in present:
+        key = rename.get(c, rename.get(c.lower(), c))
+        normalized.add(key)
     missing = required - normalized
     if missing:
         return False, f"Missing required columns: {', '.join(sorted(missing))}"

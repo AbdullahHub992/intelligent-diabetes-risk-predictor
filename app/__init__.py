@@ -59,13 +59,40 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_app_name():
-        from config import APP_NAME
-        return {"app_name": APP_NAME}
+        from config import (
+            APP_NAME, PROJECT_COURSE, PROJECT_GROUP_ID,
+            PROJECT_STUDENT, PROJECT_STUDENT_ID, PROJECT_SUPERVISOR, PROJECT_VERSION,
+        )
+        return {
+            "app_name": APP_NAME,
+            "project_group_id": PROJECT_GROUP_ID,
+            "project_student": PROJECT_STUDENT,
+            "project_student_id": PROJECT_STUDENT_ID,
+            "project_supervisor": PROJECT_SUPERVISOR,
+            "project_course": PROJECT_COURSE,
+            "project_version": PROJECT_VERSION,
+        }
 
     @app.context_processor
     def inject_csrf_token():
         from flask_wtf.csrf import generate_csrf
         return {"csrf_token": generate_csrf}
+
+    @app.context_processor
+    def inject_srs_context():
+        from flask import request
+        from app.srs_requirements import (
+            ADMIN_PANEL_FR_IDS,
+            FR_BY_ENDPOINT,
+            SRS_FR_SUMMARY,
+            USER_PANEL_FR_IDS,
+        )
+        return {
+            "page_srs": FR_BY_ENDPOINT.get(request.endpoint),
+            "srs_fr_table": SRS_FR_SUMMARY,
+            "srs_user_fr_ids": USER_PANEL_FR_IDS,
+            "srs_admin_fr_ids": ADMIN_PANEL_FR_IDS,
+        }
 
     @app.context_processor
     def inject_admin_notifications():
@@ -110,6 +137,19 @@ def _migrate_schema():
         ("health_records", "systolic", "REAL DEFAULT 120"),
         ("health_records", "diastolic", "REAL DEFAULT 80"),
         ("feedbacks", "is_read", "BOOLEAN DEFAULT 1"),
+        ("users", "professional_credentials", "VARCHAR(200)"),
+        ("users", "security_question", "VARCHAR(200)"),
+        ("users", "security_answer_hash", "VARCHAR(256)"),
+        ("users", "phone", "VARCHAR(30)"),
+        ("users", "address", "VARCHAR(255)"),
+        ("users", "baseline_height_cm", "REAL"),
+        ("users", "baseline_weight_kg", "REAL"),
+        ("users", "baseline_age", "INTEGER"),
+        ("users", "baseline_sex", "VARCHAR(10)"),
+        ("health_records", "smoking", "VARCHAR(20)"),
+        ("health_records", "physical_activity", "VARCHAR(30)"),
+        ("health_records", "diet_quality", "VARCHAR(30)"),
+        ("predictions", "confidence_score", "REAL"),
     ]
     existing_tables = inspector.get_table_names()
     for table, col, col_type in migrations:
@@ -145,11 +185,14 @@ def _seed_defaults(app):
     from werkzeug.security import generate_password_hash
 
     if not User.query.filter_by(username="admin").first():
-        db.session.add(User(
+        admin = User(
             username="admin", email="admin@diabetes.local",
             full_name="System Administrator", role="admin",
             password_hash=generate_password_hash("admin123"), is_active=True,
-        ))
+            security_question="city",
+        )
+        admin.set_security_answer("admin")
+        db.session.add(admin)
 
     provider = User.query.filter_by(username="doctor").first()
     if not provider:
@@ -157,7 +200,10 @@ def _seed_defaults(app):
             username="doctor", email="doctor@diabetes.local",
             full_name="Dr. Healthcare Provider", role="provider",
             password_hash=generate_password_hash("doctor123"), is_active=True,
+            professional_credentials="MD-12345",
+            security_question="city",
         )
+        provider.set_security_answer("doctor")
         db.session.add(provider)
         db.session.flush()
 
@@ -167,7 +213,9 @@ def _seed_defaults(app):
             username="patient", email="patient@diabetes.local",
             full_name="Sample Patient", role="patient",
             password_hash=generate_password_hash("patient123"), is_active=True,
+            security_question="pet",
         )
+        patient.set_security_answer("patient")
         db.session.add(patient)
         db.session.flush()
 
@@ -219,5 +267,15 @@ def _seed_defaults(app):
             "doctor",
             os.environ.get("OWNER_DOCTOR_ACCESS_CODE", "doctor2026"),
         )
+
+    for username, question, answer in [
+        ("admin", "city", "admin"),
+        ("doctor", "city", "doctor"),
+        ("patient", "pet", "patient"),
+    ]:
+        u = User.query.filter_by(username=username).first()
+        if u and not u.security_answer_hash:
+            u.security_question = question
+            u.set_security_answer(answer)
 
     db.session.commit()

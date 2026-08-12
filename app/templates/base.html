@@ -19,13 +19,15 @@
                 {% if current_user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
                     {% if current_user.is_patient %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.health_data') }}">Health Data</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.my_health_records') }}">My Records</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.progress') }}">Progress</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.dashboard') }}">User Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.health_data') }}">Predict Risk</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.my_health_records') }}">Prediction History</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.progress') }}">Longitudinal Tracking</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.education') }}">Education</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.feedback') }}">Send Feedback</a></li>
-                    <li class="nav-item"><a class="nav-link fw-semibold text-warning" href="{{ url_for('main.send_report_to_admin') }}">📤 Send Report</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.profile_settings') }}">My Profile</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.feedback') }}">Feedback</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.export_report') }}">Export Report</a></li>
                     <li class="nav-item">
                         <a class="nav-link position-relative" href="{{ url_for('main.patient_notifications') }}">
                             Notifications
@@ -37,6 +39,9 @@
                     {% endif %}
                     {% if current_user.is_provider %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.profile_settings') }}">My Profile</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.education') }}">Education</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.feedback') }}">Feedback</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a></li>
                     <li class="nav-item">
                         <a class="nav-link position-relative" href="{{ url_for('provider.forwarded_reports') }}">
                             Admin Reports
@@ -68,24 +73,23 @@
                         </a>
                     </li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.manage_assignments') }}">Assign Doctor</a></li>
                     {% endif %}
                 </ul>
                 <span class="navbar-text text-white me-3">
                     {{ current_user.full_name }}
                     {% if current_user.is_admin %}
                     <span class="badge bg-dark ms-1">Admin</span>
-                    {% elif current_user.is_provider %}
-                    <span class="badge bg-success ms-1">Doctor</span>
                     {% else %}
-                    <span class="badge bg-light text-dark ms-1">Patient</span>
+                    <span class="badge bg-light text-dark ms-1">User</span>
+                    {% if current_user.is_provider %}
+                    <span class="badge bg-success ms-1">Provider</span>
+                    {% endif %}
                     {% endif %}
                 </span>
                 <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}
                 <div class="ms-auto d-flex flex-wrap gap-2">
-                    <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login_patient') }}">Patient</a>
-                    <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login_doctor') }}">Doctor</a>
+                    <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.user_login') }}">User</a>
                     <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login_admin') }}">Admin</a>
                     <a class="btn btn-light btn-sm" href="{{ url_for('auth.register') }}">Register</a>
                 </div>
@@ -110,7 +114,9 @@
     </main>
 
     <footer class="text-center text-muted py-3 border-top">
-        <small>{{ app_name }} — CS619 Final Project | Decision support only, not medical advice.</small>
+        <small>{{ app_name }} — {{ project_course }} · SRS v{{ project_version }} · Group {{ project_group_id }}</small>
+        <small class="d-block">Decision support only, not medical advice. Predictions in near real-time (2–3s).</small>
+        <small class="d-block"><a href="{{ url_for('main.index') }}#srs-requirements" class="text-muted">View SRS Functional Requirements (FR-01–FR-20)</a></small>
         {% if current_user.is_authenticated and current_user.is_admin %}
         <small class="d-block mt-1 text-dark fw-semibold">Signed in as Administrator — {{ current_user.full_name }}</small>
         {% endif %}

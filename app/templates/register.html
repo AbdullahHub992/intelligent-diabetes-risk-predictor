@@ -1,13 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Register{% endblock %}
 {% block content %}
+{% include 'includes/srs_page_header.html' %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-md-7">
         <div class="card shadow">
             <div class="card-body p-4">
-                <h3 class="mb-4">Patient Registration</h3>
-                <p class="text-muted small">New accounts are registered as patients. Healthcare providers are assigned by administrators.</p>
-                <form method="POST">
+                <h3 class="mb-2">User Registration (FR-01)</h3>
+                <p class="text-muted small mb-4">
+                    Register as a <strong>User</strong> — choose Patient or Healthcare Provider during signup.
+                    Admin accounts are registered separately (UC_08).
+                </p>
+                <form method="POST" id="registerForm">
                     {{ form.hidden_tag() }}
                     <div class="row">
                         <div class="col-md-6 mb-3">{{ form.username.label(class="form-label") }}{{ form.username(class="form-control") }}</div>
@@ -15,8 +19,19 @@
                     </div>
                     <div class="mb-3">{{ form.full_name.label(class="form-label") }}{{ form.full_name(class="form-control") }}</div>
                     <div class="row">
+                        <div class="col-md-6 mb-3">{{ form.role.label(class="form-label") }}{{ form.role(class="form-select", id="roleSelect") }}</div>
+                        <div class="col-md-6 mb-3" id="credentialsField">
+                            {{ form.professional_credentials.label(class="form-label") }}
+                            {{ form.professional_credentials(class="form-control", placeholder="License no., hospital ID, etc.") }}
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">{{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}</div>
                         <div class="col-md-6 mb-3">{{ form.confirm_password.label(class="form-label") }}{{ form.confirm_password(class="form-control") }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">{{ form.security_question.label(class="form-label") }}{{ form.security_question(class="form-select") }}</div>
+                        <div class="col-md-6 mb-3">{{ form.security_answer.label(class="form-label") }}{{ form.security_answer(class="form-control") }}</div>
                     </div>
                     <div class="form-check mb-3">
                         {{ form.consent(class="form-check-input") }}
@@ -28,4 +43,18 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    const role = document.getElementById('roleSelect');
+    const cred = document.getElementById('credentialsField');
+    function toggle() {
+        if (!role || !cred) return;
+        cred.style.display = role.value === 'provider' ? '' : 'none';
+    }
+    role?.addEventListener('change', toggle);
+    toggle();
+})();
+</script>
 {% endblock %}

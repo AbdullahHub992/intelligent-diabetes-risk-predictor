@@ -7,7 +7,7 @@ from app.ml.pipeline import FEATURE_COLUMNS, load_model, record_to_frame
 
 FEATURE_LABELS = {
     "Pregnancies": "Pregnancies",
-    "Glucose": "Glucose Level",
+    "Glucose": "Glucose",
     "BloodPressure": "Blood Pressure",
     "SkinThickness": "Skin Thickness",
     "Insulin": "Insulin Level",

@@ -1,0 +1,43 @@
+<section id="srs-requirements" class="home-section mb-5">
+    <h2 class="text-center mb-2">SRS Functional Requirements</h2>
+    <p class="text-center text-muted mb-4">
+        All {{ srs_fr_table|length }} functional requirements from SRS v{{ project_version }} are implemented in this website.
+    </p>
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Use Case</th>
+                        <th>Requirement</th>
+                        <th>Description</th>
+                        <th>Panel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fr in srs_fr_table %}
+                    <tr>
+                        <td><span class="badge bg-primary">{{ fr.id }}</span></td>
+                        <td>{% if fr.uc %}<span class="badge bg-secondary">{{ fr.uc }}</span>{% else %}—{% endif %}</td>
+                        <td class="fw-semibold">{{ fr.title }}</td>
+                        <td>{{ fr.description }}</td>
+                        <td>
+                            {% if fr.panel == 'user' %}
+                            <span class="badge bg-primary-subtle text-primary border">User</span>
+                            {% elif fr.panel == 'admin' %}
+                            <span class="badge bg-dark">Admin</span>
+                            {% else %}
+                            <span class="badge bg-info text-dark">Both</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p class="text-center text-muted small mt-3 mb-0">
+        User Panel: {{ srs_user_fr_ids|join(', ') }} · Admin Panel: {{ srs_admin_fr_ids|join(', ') }}
+    </p>
+</section>

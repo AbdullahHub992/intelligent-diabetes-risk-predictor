@@ -1,16 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Progress Monitoring{% endblock %}
+{% block title %}Longitudinal Tracking Dashboard{% endblock %}
 {% block content %}
-<h2 class="mb-4">Longitudinal Progress Monitoring</h2>
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-2">Longitudinal Tracking Dashboard</h2>
+<p class="text-muted mb-4">Track changes in health status and prediction results over time.</p>
 {% if alert %}<div class="alert alert-warning">{{ alert }}</div>{% endif %}
 <div class="card shadow-sm mb-4">
     <div class="card-header">Health Metrics Over Time</div>
-    <div class="card-body"><canvas id="progressChart" height="100"></canvas></div>
+    <div class="card-body">
+        {% if history %}
+        <canvas id="progressChart" height="100"></canvas>
+        {% else %}
+        <p class="text-muted mb-0 text-center py-4">No data available yet. Please complete a risk prediction first.</p>
+        {% endif %}
+    </div>
 </div>
 <div class="card shadow-sm">
     <div class="card-header">Health Records History</div>
     <table class="table table-hover mb-0">
-        <thead><tr><th>Date</th><th>Fasting Sugar</th><th>BMI</th><th>BP (Sys/Dia)</th><th>Age</th><th>Diabetes Prob.</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Glucose</th><th>BMI</th><th>BP (Sys/Dia)</th><th>Age</th><th>Diabetes Prob.</th><th></th></tr></thead>
         <tbody>
         {% for item in history %}
         <tr>
@@ -23,13 +31,14 @@
             <td><a href="{{ url_for('main.edit_health_record', record_id=item.record.id) }}" class="btn btn-sm btn-outline-primary">Update</a></td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-muted">No records yet.</td></tr>
+        <tr><td colspan="7" class="text-muted text-center py-4">No data available yet. Please complete a risk prediction first.</td></tr>
         {% endfor %}
         </tbody>
     </table>
 </div>
 {% endblock %}
 {% block scripts %}
+{% if history %}
 <script>
 const data = {{ chart_data | tojson }};
 new Chart(document.getElementById('progressChart'), {
@@ -44,4 +53,5 @@ new Chart(document.getElementById('progressChart'), {
     }
 });
 </script>
+{% endif %}
 {% endblock %}

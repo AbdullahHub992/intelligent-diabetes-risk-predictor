@@ -15,6 +15,15 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     full_name = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="patient")
+    professional_credentials = db.Column(db.String(200), nullable=True)
+    phone = db.Column(db.String(30), nullable=True)
+    address = db.Column(db.String(255), nullable=True)
+    baseline_height_cm = db.Column(db.Float, nullable=True)
+    baseline_weight_kg = db.Column(db.Float, nullable=True)
+    baseline_age = db.Column(db.Integer, nullable=True)
+    baseline_sex = db.Column(db.String(10), nullable=True)
+    security_question = db.Column(db.String(200), nullable=True)
+    security_answer_hash = db.Column(db.String(256), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -28,6 +37,14 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def set_security_answer(self, answer):
+        self.security_answer_hash = generate_password_hash(answer.strip().lower())
+
+    def check_security_answer(self, answer):
+        if not self.security_answer_hash:
+            return False
+        return check_password_hash(self.security_answer_hash, answer.strip().lower())
+
     @property
     def is_admin(self):
         return self.role == "admin"
@@ -39,6 +56,23 @@ class User(UserMixin, db.Model):
     @property
     def is_patient(self):
         return self.role == "patient"
+
+    @property
+    def is_user(self):
+        """SRS User role: patient or healthcare provider."""
+        return self.role in ("patient", "provider")
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = "password_reset_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    token_hash = db.Column(db.String(256), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", backref="reset_tokens")
 
 
 class ProviderPatient(db.Model):
@@ -69,6 +103,9 @@ class HealthRecord(db.Model):
     bmi = db.Column(db.Float, nullable=False)
     diabetes_pedigree = db.Column(db.Float, nullable=False)
     age = db.Column(db.Integer, nullable=False)
+    smoking = db.Column(db.String(20), nullable=True)
+    physical_activity = db.Column(db.String(30), nullable=True)
+    diet_quality = db.Column(db.String(30), nullable=True)
     recorded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     prediction = db.relationship("Prediction", backref="health_record", uselist=False)
@@ -91,6 +128,7 @@ class Prediction(db.Model):
     health_record_id = db.Column(db.Integer, db.ForeignKey("health_records.id"), nullable=False)
     model_name = db.Column(db.String(50), nullable=False)
     probability = db.Column(db.Float, nullable=False)
+    confidence_score = db.Column(db.Float, nullable=True)
     risk_level = db.Column(db.String(20), nullable=False)
     explanation = db.Column(db.Text)
     recommendations = db.Column(db.Text)

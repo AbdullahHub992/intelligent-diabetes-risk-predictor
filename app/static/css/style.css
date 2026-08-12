@@ -103,6 +103,7 @@ main {
     line-height: 1;
 }
 
+.portal-user,
 .portal-patient {
     border-top: 4px solid #2563eb !important;
 }
@@ -115,6 +116,7 @@ main {
     border-top: 4px solid #334155 !important;
 }
 
+.login-form-card.portal-user,
 .login-form-card.portal-patient {
     border-top: 4px solid #2563eb;
 }

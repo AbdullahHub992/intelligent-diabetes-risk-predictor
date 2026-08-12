@@ -123,6 +123,24 @@ def _personalized_from_record(record, plan):
     if record.sex == "female" and record.pregnancies >= 3:
         items.append("Multiple pregnancies — discuss gestational diabetes history with your doctor.")
 
+    smoking = getattr(record, "smoking", None) or "never"
+    if smoking in ("current", "former"):
+        items.append(
+            "Smoking raises diabetes risk — seek support to quit or stay smoke-free."
+            if smoking == "current"
+            else "Former smoker — continue avoiding tobacco to lower long-term risk."
+        )
+
+    activity = getattr(record, "physical_activity", None) or "moderate"
+    if activity in ("low", "sedentary"):
+        items.append("Low physical activity — aim for at least 150 minutes of moderate exercise per week.")
+
+    diet = getattr(record, "diet_quality", None) or "average"
+    if diet in ("poor", "average"):
+        items.append(
+            "Improve diet quality — prioritize vegetables, whole grains, lean protein, and limit sugary drinks."
+        )
+
     if items:
         _add("Personalized (based on your values)", "high", "Based on your health data", items, plan)
 

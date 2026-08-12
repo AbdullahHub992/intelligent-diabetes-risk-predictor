@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ page_title | default('Health Data Input') }}{% endblock %}
 {% block content %}
+{% include 'includes/srs_page_header.html' %}
 <h2 class="mb-2">{{ page_title | default('Enter Your Health Data') }}</h2>
 <p class="text-muted mb-4">{{ page_subtitle | default('Fill in your health numbers below. Try "Fill healthy example" to see a low-risk profile, or enter your own values.') }}</p>
 
@@ -47,7 +48,7 @@
                 <h6 class="mb-3">Personalized Recommendations</h6>
                 {% include 'includes/recommendation_panel.html' %}
                 <div class="d-flex gap-2 flex-wrap mt-3">
-                    <a href="{{ url_for('main.prediction_detail', prediction_id=prediction.id) }}" class="btn btn-sm btn-outline-primary">View Risk Factors</a>
+                    <a href="{{ url_for('main.prediction_detail', prediction_id=prediction.id) }}" class="btn btn-sm btn-outline-primary">Explain Result</a>
                     <a href="{{ url_for('main.edit_health_record', record_id=prediction.health_record_id) }}" class="btn btn-sm btn-outline-secondary">Update These Values</a>
                 </div>
             </div>

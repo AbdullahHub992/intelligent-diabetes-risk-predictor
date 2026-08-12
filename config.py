@@ -15,6 +15,14 @@ def _database_uri():
 
 APP_NAME = "Intelligent Diabetes Risk Predictor"
 
+# SRS project metadata (Spring 2026 CS619)
+PROJECT_GROUP_ID = "S26PROJECT0C0EB"
+PROJECT_STUDENT = "Muhammad Shahmeer Akhtar"
+PROJECT_STUDENT_ID = "BC220415649"
+PROJECT_SUPERVISOR = "Komal Khawer"
+PROJECT_COURSE = "CS619 — Final Project"
+PROJECT_VERSION = "1.0"
+
 
 class Config:
     BASE_DIR = BASE_DIR

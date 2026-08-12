@@ -1,19 +1,84 @@
 {% extends "base.html" %}
 {% block title %}Upload Dataset{% endblock %}
 {% block content %}
-<h2 class="mb-4">Dataset Import</h2>
-<div class="card shadow-sm col-lg-6">
-    <div class="card-body">
-        <p>Upload the diabetes dataset CSV (Kaggle: diabeticprediction). Required columns: Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age, Outcome.</p>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-3">
-                <input type="file" name="dataset" class="form-control" accept=".csv" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Upload Dataset</button>
-        </form>
-        <hr>
-        <p class="small text-muted mb-0">A sample dataset is included at <code>data/diabetes.csv</code>.</p>
+{% include 'includes/srs_page_header.html' %}
+<h2 class="mb-2">Dataset Import (FR-16)</h2>
+<p class="text-muted mb-4">Import a clinical diabetes CSV for EDA and model training.</p>
+
+{% if active %}
+<div class="alert alert-success">
+    <strong>Active dataset:</strong> {{ active.filename }}
+    ({{ active.rows }} rows)
+    · uploaded {{ active.uploaded_at.strftime('%Y-%m-%d %H:%M') if active.uploaded_at else '—' }}
+    <div class="mt-2">
+        <a href="{{ url_for('admin.eda') }}" class="btn btn-sm btn-outline-success">Open EDA</a>
+        <a href="{{ url_for('admin.train_models') }}" class="btn btn-sm btn-success">Train Models</a>
     </div>
 </div>
+{% else %}
+<div class="alert alert-warning">No active dataset yet. Load the sample or upload a CSV below.</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Recommended: Built-in Sample</h5>
+                <p class="small text-muted">
+                    Pima Indians Diabetes dataset (768 rows) already included in this project.
+                    Required columns are guaranteed.
+                </p>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    {{ form.use_sample(class="btn btn-success btn-lg w-100") }}
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Upload Your Own CSV</h5>
+                <p class="small text-muted mb-3">
+                    Required columns:<br>
+                    <code>Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age, Outcome</code>
+                </p>
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <input type="file" name="dataset" class="form-control" accept=".csv">
+                    </div>
+                    {{ form.submit(class="btn btn-primary w-100") }}
+                </form>
+                <p class="small text-muted mt-3 mb-0">
+                    Use a <strong>.csv</strong> file only (not Excel .xlsx).
+                    Sample file: Desktop / Downloads → <code>diabetes_prediction_dataset.csv</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if datasets %}
+<div class="card shadow-sm mt-4">
+    <div class="card-header fw-semibold">Recent Imports</div>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr><th>Filename</th><th>Rows</th><th>Active</th><th>Uploaded</th></tr>
+            </thead>
+            <tbody>
+                {% for d in datasets %}
+                <tr>
+                    <td>{{ d.filename }}</td>
+                    <td>{{ d.rows }}</td>
+                    <td>{% if d.is_active %}<span class="badge bg-success">Yes</span>{% else %}No{% endif %}</td>
+                    <td>{{ d.uploaded_at.strftime('%Y-%m-%d %H:%M') if d.uploaded_at else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

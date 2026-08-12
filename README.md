@@ -22,7 +22,7 @@ All 19 CS619 functional requirements implemented:
 14. Education Resources with Admin CMS
 15. Clinical Decision Support + Provider Notes
 16. Feedback & Model Retraining from verified outcomes
-17. Admin Panel (users, assignments, training history, audit logs)
+17. Admin Panel (users, training history, audit logs)
 18. Performance (model caching, fast inference)
 19. Security (password hash, CSRF, rate limiting, audit trail, consent)
 
@@ -46,22 +46,20 @@ python setup_data.py && python train_initial.py && python run.py
 
 ## Demo Accounts
 
-**Patient (public demo)**
+**User Panel** (patients and healthcare providers log in via **User Login**)
 
-| Role | Username | Password |
+| Type | Username | Password |
 |------|----------|----------|
 | Patient | patient | patient123 |
+| Healthcare Provider | doctor | doctor123 |
 
-**Admin & Doctor (owner-only access)**
-
-Staff must use the **owner access code** at login in addition to username and password. Only the system owner should share these credentials.
+**Admin Panel** (requires owner access code at login)
 
 | Role | Username | Password | Owner Access Code |
 |------|----------|----------|-------------------|
 | Admin | admin | admin123 | `admin2026` |
-| Doctor | doctor | doctor123 | `doctor2026` |
 
-Change codes via `.env` (`OWNER_ADMIN_ACCESS_CODE`, `OWNER_DOCTOR_ACCESS_CODE`) before deployment. After login, admin and doctor can update their profile from **My Profile** in the menu.
+Change the admin code via `.env` (`OWNER_ADMIN_ACCESS_CODE`) before deployment.
 
 ## Deploy to Render (free)
 
@@ -69,7 +67,6 @@ Change codes via `.env` (`OWNER_ADMIN_ACCESS_CODE`, `OWNER_DOCTOR_ACCESS_CODE`) 
 2. Go to [render.com](https://render.com) → **New +** → **Blueprint** → select your repo.
 3. Set env vars when prompted:
    - `OWNER_ADMIN_ACCESS_CODE` (e.g. your private admin code)
-   - `OWNER_DOCTOR_ACCESS_CODE` (e.g. your private doctor code)
 4. Wait ~5–8 min for the first build. Your URL will be like `https://intelligent-diabetes-risk-predictor.onrender.com`.
 
 **Notes**
@@ -78,7 +75,7 @@ Change codes via `.env` (`OWNER_ADMIN_ACCESS_CODE`, `OWNER_DOCTOR_ACCESS_CODE`) 
 
 ## Documentation
 
-- [SRS](docs/SRS.md) — Requirements traceability
+- [SRS](docs/SRS.md) — Full functional requirements (FR-01–FR-20) + traceability
 - [User Manual](docs/USER_MANUAL.md) — Per-role guide
 - [Test Plan](docs/TEST_PLAN.md) — Testing checklist
 

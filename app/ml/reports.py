@@ -23,7 +23,7 @@ def generate_csv_report(user, predictions, health_records):
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Report Date", "Patient", "Record Date", "Sex", "Pregnancies", "Fasting Sugar",
+        "Report Date", "Patient", "Record Date", "Sex", "Pregnancies", "Glucose",
         "Systolic BP", "Diastolic BP",
         "Skin Thickness", "Insulin", "BMI", "Pedigree", "Age",
         "Model", "Probability", "Risk Level", "Risk Factors", "Recommendations",

@@ -11,6 +11,10 @@
     </p>
 </div>
 <div class="d-flex justify-content-between align-items-center mb-2">
+    <span><strong>Confidence Score:</strong></span>
+    <span class="badge bg-info fs-6">{{ '%.1f'|format((prediction.confidence_score or (prediction.probability if prediction.probability >= 0.5 else 1 - prediction.probability)) * 100) }}%</span>
+</div>
+<div class="d-flex justify-content-between align-items-center mb-2">
     <span><strong>Diabetes Risk Level:</strong></span>
     <span class="badge bg-{% if prediction.risk_level == 'High' %}danger{% elif prediction.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %} fs-6">
         {{ prediction.risk_level }}

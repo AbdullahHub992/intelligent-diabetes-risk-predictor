@@ -8,6 +8,7 @@
         <div class="mb-3">{{ form.full_name.label(class="form-label") }}{{ form.full_name(class="form-control") }}</div>
         <div class="mb-3">{{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}</div>
         <div class="mb-3">{{ form.role.label(class="form-label") }}{{ form.role(class="form-select") }}</div>
+        <div class="mb-3">{{ form.professional_credentials.label(class="form-label") }}{{ form.professional_credentials(class="form-control") }}</div>
         <div class="form-check mb-3">{{ form.is_active(class="form-check-input") }}{{ form.is_active.label(class="form-check-label") }}</div>
         {{ form.submit(class="btn btn-primary") }}
         <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
