@@ -380,17 +380,53 @@ def reset_user_password(user_id):
 @login_required
 @role_required("admin")
 def manage_assignments():
-    # Not an SRS Admin requirement — hidden from UI; redirect if opened directly.
-    flash("Doctor assignment is not part of the SRS Admin scope.", "info")
-    return redirect(url_for("admin.admin_dashboard"))
+    providers = User.query.filter_by(role="provider", is_active=True).all()
+    patients = User.query.filter_by(role="patient", is_active=True).all()
+    assignments = ProviderPatient.query.all()
+    form = AssignDoctorPatientForm()
+    form.provider_id.choices = [(p.id, f"{p.full_name} (@{p.username})") for p in providers]
+    form.patient_id.choices = [(p.id, f"{p.full_name} (@{p.username})") for p in patients]
+
+    if form.validate_on_submit():
+        provider_id = form.provider_id.data
+        patient_id = form.patient_id.data
+        if ProviderPatient.query.filter_by(provider_id=provider_id, patient_id=patient_id).first():
+            flash("This patient is already assigned to that healthcare provider.", "warning")
+        else:
+            db.session.add(ProviderPatient(provider_id=provider_id, patient_id=patient_id))
+            db.session.commit()
+            provider = User.query.get(provider_id)
+            patient = User.query.get(patient_id)
+            log_audit(
+                "assign_patient",
+                "assignment",
+                f"provider={provider.username}, patient={patient.username}",
+            )
+            flash(
+                f"{patient.full_name} is now assigned to {provider.full_name}. "
+                "The provider will see this patient under Clinical.",
+                "success",
+            )
+        return redirect(url_for("admin.manage_assignments"))
+
+    return render_template(
+        "admin/assignments.html",
+        form=form,
+        providers=providers,
+        patients=patients,
+        assignments=assignments,
+    )
 
 
 @admin_bp.route("/assignments/<int:assignment_id>/delete", methods=["POST"])
 @login_required
 @role_required("admin")
 def delete_assignment(assignment_id):
-    flash("Doctor assignment is not part of the SRS Admin scope.", "info")
-    return redirect(url_for("admin.admin_dashboard"))
+    row = ProviderPatient.query.get_or_404(assignment_id)
+    db.session.delete(row)
+    db.session.commit()
+    flash("Patient–provider link removed.", "info")
+    return redirect(url_for("admin.manage_assignments"))
 
 
 @admin_bp.route("/education")
