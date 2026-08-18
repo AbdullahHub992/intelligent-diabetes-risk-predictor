@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
 from wtforms import (
     BooleanField, FloatField, IntegerField, PasswordField,
-    SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField,
+    SelectField, StringField, SubmitField, TextAreaField,
 )
 from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Length, NumberRange, Optional, URL
 
@@ -12,13 +12,6 @@ class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired()])
     remember = BooleanField("Remember Me")
     submit = SubmitField("Login")
-
-
-class StaffLoginForm(LoginForm):
-    owner_access_code = StringField(
-        "Owner Access Code",
-        validators=[DataRequired(), Length(min=4, max=80)],
-    )
 
 
 class ProfileSettingsForm(FlaskForm):
@@ -86,24 +79,6 @@ class RegisterForm(FlaskForm):
         "Confirm Password",
         validators=[DataRequired(), EqualTo("password", message="Passwords must match")],
     )
-    security_question = SelectField(
-        "Security Question (for password recovery)",
-        choices=[
-            ("pet", "What is the name of your first pet?"),
-            ("city", "In what city were you born?"),
-            ("school", "What is the name of your primary school?"),
-            ("mother", "What is your mother's maiden name?"),
-        ],
-        validators=[DataRequired()],
-    )
-    security_answer = StringField(
-        "Security Answer",
-        validators=[DataRequired(), Length(min=2, max=120)],
-    )
-    consent = BooleanField(
-        "I consent to secure storage of my health data for diabetes risk assessment",
-        validators=[DataRequired()],
-    )
     submit = SubmitField("Register")
 
 
@@ -113,7 +88,6 @@ class ForgotPasswordLookupForm(FlaskForm):
 
 
 class ForgotPasswordForm(FlaskForm):
-    security_answer = StringField("Security Answer", validators=[DataRequired(), Length(min=2, max=120)])
     new_password = PasswordField("New Password", validators=[DataRequired(), Length(min=8)])
     confirm_password = PasswordField(
         "Confirm New Password",
@@ -128,7 +102,6 @@ class ForgotPasswordEmailForm(FlaskForm):
 
 
 class AdminRegisterForm(FlaskForm):
-    owner_access_code = StringField("Owner Access Code", validators=[DataRequired(), Length(min=4, max=80)])
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
@@ -137,17 +110,6 @@ class AdminRegisterForm(FlaskForm):
         "Confirm Password",
         validators=[DataRequired(), EqualTo("password", message="Passwords must match")],
     )
-    security_question = SelectField(
-        "Security Question",
-        choices=[
-            ("pet", "What is the name of your first pet?"),
-            ("city", "In what city were you born?"),
-            ("school", "What is the name of your primary school?"),
-            ("mother", "What is your mother's maiden name?"),
-        ],
-        validators=[DataRequired()],
-    )
-    security_answer = StringField("Security Answer", validators=[DataRequired(), Length(min=2, max=120)])
     submit = SubmitField("Register Admin")
 
 
@@ -156,9 +118,9 @@ class CreateUserForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired(), Email()])
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     role = SelectField("Role", choices=[
-        ("patient", "Patient"),
-        ("provider", "Healthcare Provider"),
-        ("admin", "Administrator"),
+        ("patient", "User (Patient)"),
+        ("provider", "User (Healthcare Provider)"),
+        ("admin", "Admin"),
     ])
     professional_credentials = StringField("Professional Credentials", validators=[Optional(), Length(max=200)])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
@@ -304,28 +266,6 @@ class HealthDataForm(FlaskForm):
         return True
 
 
-class SendReportToAdminForm(FlaskForm):
-    prediction_id = SelectField("Report to Send", coerce=int, validators=[DataRequired()])
-    message = TextAreaField(
-        "Message for Admin (optional)",
-        validators=[Optional(), Length(max=500)],
-    )
-    submit = SubmitField("Send Report to Admin")
-
-
-class ForwardReportToDoctorsForm(FlaskForm):
-    provider_ids = SelectMultipleField(
-        "Select Doctors",
-        coerce=int,
-        validators=[DataRequired(message="Please select at least one doctor.")],
-    )
-    admin_note = TextAreaField(
-        "Note for Doctor(s) (optional)",
-        validators=[Optional(), Length(max=500)],
-    )
-    submit = SubmitField("Send Report to Selected Doctors")
-
-
 class FeedbackForm(FlaskForm):
     prediction_id = SelectField("Prediction to Review", coerce=int, validators=[DataRequired()])
     rating = SelectField(
@@ -346,7 +286,9 @@ class UserEditForm(FlaskForm):
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     role = SelectField("Role", choices=[
-        ("patient", "Patient"), ("provider", "Healthcare Provider"), ("admin", "Administrator"),
+        ("patient", "User (Patient)"),
+        ("provider", "User (Healthcare Provider)"),
+        ("admin", "Admin"),
     ])
     professional_credentials = StringField("Professional Credentials", validators=[Optional(), Length(max=200)])
     is_active = BooleanField("Active Account")
@@ -379,18 +321,10 @@ class ClinicalNoteForm(FlaskForm):
     submit = SubmitField("Save Note")
 
 
-class DoctorRemarkForm(FlaskForm):
-    remark = TextAreaField(
-        "Your Remarks for Patient",
-        validators=[DataRequired(), Length(min=5, max=2000)],
-    )
-    submit = SubmitField("Send Remark to Patient")
-
-
 class AssignDoctorPatientForm(FlaskForm):
-    provider_id = SelectField("Doctor", coerce=int, validators=[DataRequired()])
+    provider_id = SelectField("Healthcare Provider", coerce=int, validators=[DataRequired()])
     patient_id = SelectField("Patient", coerce=int, validators=[DataRequired()])
-    submit = SubmitField("Assign Patient to Doctor")
+    submit = SubmitField("Assign Patient to Provider")
 
 
 class AssignPatientForm(FlaskForm):

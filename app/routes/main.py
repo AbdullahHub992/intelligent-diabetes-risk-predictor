@@ -6,15 +6,12 @@ from flask_login import current_user, login_required
 
 from app import db
 from app.decorators import role_required
-from app.forms import ExportReportForm, FeedbackForm, HealthDataForm, SendReportToAdminForm
+from app.forms import ExportReportForm, FeedbackForm, HealthDataForm
 from app.ml.predictor import predict_health_record, resolve_model_name
 from app.ml.recommendations import parse_stored_recommendations
 from app.ml.reports import generate_csv_report, generate_pdf_report
-from app.models import AdminReportSubmission, DoctorReportRemark, EducationResource, Feedback, HealthRecord, ModelMetrics, Prediction, ProviderPatient
-from app.utils import (
-    build_admin_report_snapshot, get_patient_doctor_remarks, get_unread_doctor_remarks_count,
-    log_audit, redirect_to_role_home,
-)
+from app.models import EducationResource, Feedback, HealthRecord, ModelMetrics, Prediction, ProviderPatient
+from app.utils import log_audit, redirect_to_role_home
 
 main_bp = Blueprint("main", __name__)
 
@@ -97,8 +94,6 @@ def index():
 def dashboard():
     if current_user.is_admin:
         return redirect(url_for("admin.admin_dashboard"))
-    if current_user.is_provider:
-        return redirect(url_for("provider.provider_dashboard"))
 
     records = HealthRecord.query.filter_by(user_id=current_user.id).order_by(
         HealthRecord.recorded_at.desc()
@@ -106,11 +101,6 @@ def dashboard():
     predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(
         Prediction.created_at.desc()
     ).all()
-    sent_reports = AdminReportSubmission.query.filter_by(
-        patient_id=current_user.id
-    ).order_by(AdminReportSubmission.created_at.desc()).all()
-    doctor_remarks = get_patient_doctor_remarks(current_user.id)
-    unread_remarks = get_unread_doctor_remarks_count(current_user.id)
     metrics = ModelMetrics.query.order_by(ModelMetrics.trained_at.desc()).all()
     trend_data = [
         {"date": p.created_at.strftime("%Y-%m-%d"), "probability": round(p.probability * 100, 1)}
@@ -122,9 +112,6 @@ def dashboard():
     latest_rec = parse_stored_recommendations(predictions[0]) if predictions else None
     return render_template(
         "dashboard.html", records=records, predictions=predictions,
-        sent_reports=sent_reports,
-        doctor_remarks=doctor_remarks,
-        unread_remarks=unread_remarks,
         metrics=metrics, trend_data=trend_data, alert=alert,
         recommendation_plan=latest_rec,
     )
@@ -132,7 +119,7 @@ def dashboard():
 
 @main_bp.route("/health-data", methods=["GET", "POST"])
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def health_data():
     form = HealthDataForm()
     latest_prediction = None
@@ -173,7 +160,7 @@ def health_data():
 
 @main_bp.route("/my-health-records")
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def my_health_records():
     records = HealthRecord.query.filter_by(user_id=current_user.id).order_by(
         HealthRecord.recorded_at.desc()
@@ -185,7 +172,7 @@ def my_health_records():
 
 @main_bp.route("/my-health-records/<int:record_id>/edit", methods=["GET", "POST"])
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def edit_health_record(record_id):
     record = HealthRecord.query.get_or_404(record_id)
     if record.user_id != current_user.id:
@@ -292,113 +279,6 @@ def feedback():
     return render_template("feedback.html", form=form)
 
 
-@main_bp.route("/send-report-to-admin", methods=["GET", "POST"])
-@login_required
-@role_required("patient")
-def send_report_to_admin():
-    form = SendReportToAdminForm()
-    predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(
-        Prediction.created_at.desc()
-    ).limit(20).all()
-    form.prediction_id.choices = [
-        (
-            p.id,
-            f"{p.created_at.strftime('%Y-%m-%d')} — {p.risk_level} risk ({p.probability:.0%})",
-        )
-        for p in predictions
-    ]
-
-    if not form.prediction_id.choices:
-        flash("No predictions yet. Add health data first, then send your report to admin.", "info")
-        return redirect(url_for("main.health_data"))
-
-    if request.args.get("prediction_id"):
-        try:
-            selected_id = int(request.args.get("prediction_id"))
-            if any(p.id == selected_id for p in predictions):
-                form.prediction_id.data = selected_id
-        except (TypeError, ValueError):
-            pass
-
-    if form.validate_on_submit():
-        prediction = Prediction.query.get_or_404(form.prediction_id.data)
-        if prediction.user_id != current_user.id:
-            abort(403)
-        record = HealthRecord.query.get(prediction.health_record_id)
-        submission = AdminReportSubmission(
-            patient_id=current_user.id,
-            prediction_id=prediction.id,
-            message=form.message.data,
-            report_summary=build_admin_report_snapshot(
-                current_user, prediction, record, form.message.data
-            ),
-            is_read=False,
-        )
-        db.session.add(submission)
-        db.session.commit()
-        log_audit("send_report_to_admin", "admin_report", f"prediction_id={prediction.id}")
-        flash("Your report was sent to the admin successfully.", "success")
-        return redirect(url_for("main.dashboard"))
-
-    return render_template("send_report_to_admin.html", form=form)
-
-
-@main_bp.route("/notifications")
-@login_required
-@role_required("patient")
-def patient_notifications():
-    remarks = get_patient_doctor_remarks(current_user.id)
-    return render_template(
-        "patient_notifications.html",
-        remarks=remarks,
-        unread_count=get_unread_doctor_remarks_count(current_user.id),
-    )
-
-
-@main_bp.route("/notifications/<int:remark_id>", methods=["GET", "POST"])
-@login_required
-@role_required("patient")
-def view_doctor_remark(remark_id):
-    remark = DoctorReportRemark.query.get_or_404(remark_id)
-    if remark.patient_id != current_user.id:
-        abort(403)
-
-    if not remark.is_read:
-        remark.is_read = True
-        db.session.commit()
-
-    prediction = remark.prediction
-    feedback_form = FeedbackForm()
-    feedback_form.prediction_id.choices = [
-        (prediction.id, f"{prediction.created_at.strftime('%Y-%m-%d')} - {prediction.risk_level} ({prediction.probability:.0%})"),
-    ]
-    feedback_form.prediction_id.data = prediction.id
-
-    if request.method == "POST" and not remark.feedback_submitted:
-        if feedback_form.validate_on_submit():
-            fb = Feedback(
-                user_id=current_user.id,
-                prediction_id=feedback_form.prediction_id.data,
-                rating=int(feedback_form.rating.data),
-                comment=feedback_form.comment.data,
-                actual_outcome=int(feedback_form.actual_outcome.data) if feedback_form.actual_outcome.data else None,
-                is_read=False,
-            )
-            db.session.add(fb)
-            remark.feedback_submitted = True
-            db.session.commit()
-            log_audit("send_feedback_to_admin", "feedback", f"remark_id={remark_id}")
-            flash("Your feedback has been sent to the administrator. Thank you!", "success")
-            return redirect(url_for("main.dashboard"))
-
-    return render_template(
-        "doctor_remark_detail.html",
-        remark=remark,
-        prediction=prediction,
-        feedback_form=feedback_form,
-    )
-
-
 def _filter_predictions_for_export(user, prediction_id=None):
     predictions = Prediction.query.filter_by(user_id=user.id).order_by(Prediction.created_at.desc()).all()
     if prediction_id and prediction_id > 0:
@@ -412,7 +292,7 @@ def _filter_predictions_for_export(user, prediction_id=None):
 
 @main_bp.route("/export-report", methods=["GET", "POST"])
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def export_report():
     """UC_05: Export Health Report with PDF/CSV format selection."""
     form = ExportReportForm()
@@ -450,7 +330,7 @@ def export_report():
 
 @main_bp.route("/reports/csv")
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def export_csv():
     prediction_id = request.args.get("prediction_id", type=int)
     predictions, records = _filter_predictions_for_export(current_user, prediction_id)
@@ -464,7 +344,7 @@ def export_csv():
 
 @main_bp.route("/reports/pdf")
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def export_pdf():
     prediction_id = request.args.get("prediction_id", type=int)
     predictions, records = _filter_predictions_for_export(current_user, prediction_id)
@@ -479,7 +359,7 @@ def export_pdf():
 
 @main_bp.route("/progress")
 @login_required
-@role_required("patient")
+@role_required("patient", "provider")
 def progress():
     records = HealthRecord.query.filter_by(user_id=current_user.id).order_by(HealthRecord.recorded_at.asc()).all()
     predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(Prediction.created_at.asc()).all()

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Assign Patient to Doctor{% endblock %}
+{% block title %}Assign Patient to Provider{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
-        <h2 class="mb-1">Assign Patient to Doctor</h2>
-        <p class="text-muted mb-0">Choose a doctor and patient, then click the button to link them.</p>
+        <h2 class="mb-1">Assign Patient to Provider</h2>
+        <p class="text-muted mb-0">Choose a healthcare provider and a patient, then link them for Clinical (FR-13).</p>
     </div>
     <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">← Back to Admin Home</a>
 </div>
@@ -12,10 +12,10 @@
 <div class="alert alert-light border mb-4">
     <strong>How it works:</strong>
     <ol class="mb-0 mt-2 ps-3">
-        <li>Select the <strong>doctor</strong> who should review the patient.</li>
+        <li>Select the <strong>healthcare provider</strong> who should review the patient.</li>
         <li>Select the <strong>patient</strong> whose reports should be shared.</li>
-        <li>Click <strong>Assign Patient to Doctor</strong>.</li>
-        <li>The doctor will then see that patient under <strong>Clinical</strong> when they log in.</li>
+        <li>Click <strong>Assign Patient to Provider</strong>.</li>
+        <li>The provider will then see that patient under <strong>Clinical</strong> when they log in.</li>
     </ol>
 </div>
 
@@ -26,7 +26,7 @@
             <div class="card-body">
                 {% if not providers %}
                 <div class="alert alert-warning mb-0">
-                    No active doctors found. Create a doctor account under <a href="{{ url_for('admin.manage_users') }}">Manage Users</a> first.
+                    No active healthcare providers found. Create a User (Healthcare Provider) account under <a href="{{ url_for('admin.manage_users') }}">Account Management</a> first.
                 </div>
                 {% elif not patients %}
                 <div class="alert alert-warning mb-0">
@@ -36,14 +36,14 @@
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">1. Select Doctor</label>
+                        <label class="form-label fw-semibold">1. Select Healthcare Provider</label>
                         {{ form.provider_id(class="form-select form-select-lg") }}
-                        <div class="form-text">The doctor who will view this patient's reports.</div>
+                        <div class="form-text">The healthcare provider who will view this patient's reports.</div>
                     </div>
                     <div class="mb-4">
                         <label class="form-label fw-semibold">2. Select Patient</label>
                         {{ form.patient_id(class="form-select form-select-lg") }}
-                        <div class="form-text">The patient whose health data will be visible to the doctor.</div>
+                        <div class="form-text">The patient whose health data will be visible to the provider.</div>
                     </div>
                     {{ form.submit(class="btn btn-success btn-lg w-100") }}
                 </form>
@@ -54,7 +54,7 @@
     <div class="col-lg-7">
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Current Doctor–Patient Links</span>
+                <span class="fw-semibold">Current Provider–Patient Links</span>
                 <span class="badge bg-secondary">{{ assignments|length }} total</span>
             </div>
             {% if assignments %}
@@ -62,7 +62,7 @@
                 <table class="table table-hover mb-0 align-middle">
                     <thead>
                         <tr>
-                            <th>Doctor</th>
+                            <th>Healthcare Provider</th>
                             <th>Patient</th>
                             <th>Assigned On</th>
                             <th class="text-end">Action</th>
@@ -82,7 +82,7 @@
                         <td>{{ a.assigned_at.strftime('%d %b %Y') }}</td>
                         <td class="text-end">
                             <form method="POST" action="{{ url_for('admin.delete_assignment', assignment_id=a.id) }}" class="d-inline"
-                                  onsubmit="return confirm('Remove this link? The doctor will no longer see this patient.');">
+                                  onsubmit="return confirm('Remove this link? The provider will no longer see this patient.');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Remove Link</button>
                             </form>

@@ -4,10 +4,13 @@
 {% include 'includes/srs_page_header.html' %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <div>
-        <h2 class="mb-1">User Management (FR-20)</h2>
-        <p class="text-muted mb-0">View and edit patient, doctor, and admin accounts.</p>
+        <h2 class="mb-1">Account Management (FR-20)</h2>
+        <p class="text-muted mb-0">Create, edit, and manage User (Patient / Healthcare Provider) and Admin accounts.</p>
     </div>
-    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">Create User</a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.manage_assignments') }}" class="btn btn-outline-primary">Assign Patient to Provider</a>
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">Create User</a>
+    </div>
 </div>
 <div class="card shadow-sm">
     <table class="table table-hover mb-0 align-middle">
@@ -22,9 +25,9 @@
                 {% if u.role == 'admin' %}
                 <span class="badge bg-dark">Admin</span>
                 {% elif u.role == 'provider' %}
-                <span class="badge bg-success">Doctor</span>
+                <span class="badge bg-success">User (Healthcare Provider)</span>
                 {% else %}
-                <span class="badge bg-primary">Patient</span>
+                <span class="badge bg-primary">User (Patient)</span>
                 {% endif %}
             </td>
             <td>{% if u.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-danger">Inactive</span>{% endif %}</td>

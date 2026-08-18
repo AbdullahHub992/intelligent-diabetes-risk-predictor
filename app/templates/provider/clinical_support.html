@@ -38,22 +38,8 @@
             <div class="card-header fw-bold">Recommendation System (based on prediction)</div>
             <div class="card-body">{% include 'includes/recommendation_panel.html' %}</div>
         </div>
-        {% if current_user.is_provider and remark_form %}
-        <div class="card shadow-sm mb-3 border-primary border-top border-3">
-            <div class="card-header bg-primary text-white">Send Remarks to Patient</div>
-            <div class="card-body">
-                <p class="text-muted small mb-2">Patient will get a notification on their dashboard.</p>
-                <form method="POST">
-                    {{ remark_form.hidden_tag() }}
-                    <input type="hidden" name="form_type" value="remark">
-                    {{ remark_form.remark(class="form-control mb-2", rows=3, placeholder="Your remarks for the patient...") }}
-                    {{ remark_form.submit(class="btn btn-primary btn-sm") }}
-                </form>
-            </div>
-        </div>
-        {% endif %}
         <div class="card shadow-sm">
-            <div class="card-header">Add Clinical Note (internal)</div>
+            <div class="card-header">Add Clinical Note</div>
             <div class="card-body">
                 <form method="POST">
                     {{ form.hidden_tag() }}

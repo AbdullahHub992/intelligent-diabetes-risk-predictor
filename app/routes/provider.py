@@ -1,46 +1,21 @@
 import json
 from io import BytesIO
 
-from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, flash, redirect, render_template, send_file, url_for
 from flask_login import current_user, login_required
 
 from app import db
 from app.decorators import role_required
-from app.forms import ClinicalNoteForm, DoctorRemarkForm
+from app.forms import ClinicalNoteForm
 from app.ml.recommendations import parse_stored_recommendations
 from app.ml.reports import generate_csv_report, generate_pdf_report
-from app.models import ClinicalNote, DoctorReportForward, DoctorReportRemark, HealthRecord, ModelMetrics, Prediction, User
+from app.models import ClinicalNote, HealthRecord, ModelMetrics, Prediction, User
 from app.utils import (
-    get_assigned_patient_ids, get_unread_doctor_forwards_count,
-    log_audit, parse_admin_report_display_data, provider_can_access_patient,
+    get_assigned_patient_ids,
+    log_audit, provider_can_access_patient,
 )
 
 provider_bp = Blueprint("provider", __name__)
-
-
-def _save_doctor_remark(patient_id, prediction_id, remark_text):
-    if not current_user.is_provider:
-        flash("Only doctors can send remarks to patients.", "warning")
-        return None
-    patient = User.query.get(patient_id)
-    remark = DoctorReportRemark(
-        provider_id=current_user.id,
-        patient_id=patient_id,
-        prediction_id=prediction_id,
-        remark=remark_text.strip(),
-        is_read=False,
-        feedback_submitted=False,
-    )
-    db.session.add(remark)
-    db.session.commit()
-    log_audit("doctor_remark", "patient", f"patient_id={patient_id}, prediction_id={prediction_id}")
-    if patient:
-        flash(
-            f"Remark sent to {patient.full_name} (@{patient.username}). "
-            f"They must log in as that patient to see the notification.",
-            "success",
-        )
-    return remark
 
 
 def _accessible_patients():
@@ -70,19 +45,12 @@ def provider_dashboard():
         {"date": p.created_at.strftime("%Y-%m-%d"), "probability": round(p.probability * 100, 1)}
         for p in reversed(recent_predictions[:10])
     ]
-    unread_forwards = 0
-    total_forwards = 0
-    if current_user.is_provider:
-        unread_forwards = get_unread_doctor_forwards_count(current_user.id)
-        total_forwards = DoctorReportForward.query.filter_by(provider_id=current_user.id).count()
     return render_template(
         "provider/dashboard.html",
         patients=patients,
         recent_predictions=recent_predictions,
         high_risk_count=len(high_risk),
         risk_trend=risk_trend,
-        unread_forwards=unread_forwards,
-        total_forwards=total_forwards,
     )
 
 
@@ -131,14 +99,8 @@ def clinical_support(prediction_id):
     record = HealthRecord.query.get(prediction.health_record_id)
     explanation = json.loads(prediction.explanation) if prediction.explanation else []
     form = ClinicalNoteForm()
-    remark_form = DoctorRemarkForm()
-    form_type = request.form.get("form_type")
 
-    if request.method == "POST" and form_type == "remark":
-        if remark_form.validate_on_submit():
-            _save_doctor_remark(patient.id, prediction.id, remark_form.remark.data)
-            return redirect(url_for("provider.clinical_support", prediction_id=prediction_id))
-    elif form.validate_on_submit():
+    if form.validate_on_submit():
         note = ClinicalNote(
             provider_id=current_user.id,
             patient_id=patient.id,
@@ -156,7 +118,6 @@ def clinical_support(prediction_id):
         "provider/clinical_support.html",
         prediction=prediction, record=record, patient=patient,
         explanation=explanation, form=form, notes=notes,
-        remark_form=remark_form,
         recommendation_plan=parse_stored_recommendations(prediction),
     )
 
@@ -195,49 +156,4 @@ def export_patient_pdf(patient_id):
     return send_file(
         pdf_buffer, mimetype="application/pdf",
         as_attachment=True, download_name=f"report_{patient.username}.pdf",
-    )
-
-
-@provider_bp.route("/forwarded-reports")
-@login_required
-@role_required("provider")
-def forwarded_reports():
-    forwards = DoctorReportForward.query.filter_by(
-        provider_id=current_user.id
-    ).order_by(DoctorReportForward.created_at.desc()).all()
-    return render_template(
-        "provider/forwarded_reports.html",
-        forwards=forwards,
-        unread_count=get_unread_doctor_forwards_count(current_user.id),
-    )
-
-
-@provider_bp.route("/forwarded-reports/<int:forward_id>", methods=["GET", "POST"])
-@login_required
-@role_required("provider")
-def view_forwarded_report(forward_id):
-    forward = DoctorReportForward.query.get_or_404(forward_id)
-    if forward.provider_id != current_user.id:
-        flash("Access denied.", "danger")
-        return redirect(url_for("provider.forwarded_reports"))
-
-    if request.method == "GET" and not forward.is_read:
-        forward.is_read = True
-        db.session.commit()
-        log_audit("read_forwarded_report", "doctor_report", f"id={forward_id}")
-
-    report = forward.admin_report
-    remark_form = DoctorRemarkForm()
-    if remark_form.validate_on_submit() and request.form.get("form_type") == "remark":
-        _save_doctor_remark(report.patient_id, report.prediction_id, remark_form.remark.data)
-        return redirect(url_for("provider.view_forwarded_report", forward_id=forward_id))
-
-    display = parse_admin_report_display_data(report)
-    return render_template(
-        "provider/forwarded_report_detail.html",
-        forward=forward,
-        report=report,
-        admin_note=forward.admin_note,
-        remark_form=remark_form,
-        **display,
     )

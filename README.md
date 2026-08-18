@@ -4,27 +4,22 @@
 
 ## Complete Feature List
 
-All 19 CS619 functional requirements implemented:
+All 20 SRS functional requirements (FR-01–FR-20) are implemented:
 
-1. User Management & RBAC (Patient, Provider, Admin)
-2. Health Data Input + Admin Dataset Import
-3. EDA (summary stats, correlation, histograms, outcome distribution)
-4. Data Preprocessing (cleaning, scaling, 70/30 split)
-5. ML Models: Neural Network (MLP), SVM, Decision Tree, Logistic Regression
-6. Evaluation: Accuracy, Precision, Recall, F1-score, Confusion Matrix (visual)
-7. Model Comparison & Auto-Selection (F1) + Admin Override
-8. Model Persistence (joblib)
-9. ML-Based Risk Factor Analysis (feature importance + clinical thresholds)
-10. Personalized Recommendations
-11. Longitudinal Tracking with trend alerts
-12. Role-Specific Dashboards with Chart.js
-13. PDF & CSV Report Export (patient + provider)
-14. Education Resources with Admin CMS
-15. Clinical Decision Support + Provider Notes
-16. Feedback & Model Retraining from verified outcomes
-17. Admin Panel (users, training history, audit logs)
-18. Performance (model caching, fast inference)
-19. Security (password hash, CSRF, rate limiting, audit trail, consent)
+1. User registration (Patient / Healthcare Provider) and Admin registration
+2. User Login + Admin Login with RBAC
+3. Password recovery, password change, profile management
+4. Health data input and risk prediction (8 features + habits)
+5. Prediction history, longitudinal tracking, dashboard
+6. Risk factor explanation and personalized recommendations
+7. PDF/CSV report export
+8. Education resources
+9. Clinical decision support (healthcare provider)
+10. Feedback submission and model retraining
+11. Dataset import, EDA, 70/30 preprocessing
+12. Train/compare NN, SVM, DT, LR with model persistence
+13. Account management (Admin)
+14. Security: password hashing, RBAC, CSRF, HTTPS-ready
 
 ## Quick Start
 
@@ -53,21 +48,17 @@ python setup_data.py && python train_initial.py && python run.py
 | Patient | patient | patient123 |
 | Healthcare Provider | doctor | doctor123 |
 
-**Admin Panel** (requires owner access code at login)
+**Admin Panel**
 
-| Role | Username | Password | Owner Access Code |
-|------|----------|----------|-------------------|
-| Admin | admin | admin123 | `admin2026` |
-
-Change the admin code via `.env` (`OWNER_ADMIN_ACCESS_CODE`) before deployment.
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | admin | admin123 |
 
 ## Deploy to Render (free)
 
 1. Push this project to GitHub.
-2. Go to [render.com](https://render.com) → **New +** → **Blueprint** → select your repo.
-3. Set env vars when prompted:
-   - `OWNER_ADMIN_ACCESS_CODE` (e.g. your private admin code)
-4. Wait ~5–8 min for the first build. Your URL will be like `https://intelligent-diabetes-risk-predictor.onrender.com`.
+2. Go to [render.com](render.com) → **New +** → **Blueprint** → select your repo.
+3. Wait ~5–8 min for the first build. Your URL will be like `https://intelligent-diabetes-risk-predictor.onrender.com`.
 
 **Notes**
 - Free tier sleeps after ~15 min idle; first visit after sleep takes ~30–60 s.

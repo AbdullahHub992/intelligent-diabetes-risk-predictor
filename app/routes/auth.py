@@ -1,15 +1,15 @@
-from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, session, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 
 from app import db
 from app.forms import (
-    AdminRegisterForm, ChangePasswordForm, ForgotPasswordEmailForm,
+    AdminRegisterForm, ChangePasswordForm,
     ForgotPasswordForm, ForgotPasswordLookupForm, LoginForm, ProfileSettingsForm,
-    RegisterForm, ResetPasswordForm, StaffLoginForm,
+    RegisterForm, ResetPasswordForm,
 )
 from app.models import PasswordResetToken, User
 from app.security import clear_login_attempts, is_login_rate_limited, record_failed_login
-from app.utils import log_audit, redirect_to_role_home, security_question_text, verify_owner_access_code
+from app.utils import log_audit, redirect_to_role_home
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -17,18 +17,16 @@ LOGIN_PORTALS = {
     "user": {
         "roles": ["patient", "provider"],
         "title": "User Login",
-        "subtitle": "Patients and healthcare providers — predictions, dashboards, reports, and clinical support.",
+        "subtitle": "Patients and healthcare providers — predictions, dashboards, reports, education, and clinical support.",
         "icon": "user",
         "demo": "patient / patient123  ·  doctor / doctor123",
-        "requires_owner_code": False,
     },
     "admin": {
         "roles": ["admin"],
         "title": "Admin Login",
-        "subtitle": "System administrator — dataset import, model training, and user management.",
+        "subtitle": "System administrator — dataset import, model training, and account management.",
         "icon": "admin",
-        "demo": None,
-        "requires_owner_code": True,
+        "demo": "admin / admin123",
     },
 }
 
@@ -66,18 +64,12 @@ def _handle_login(portal_key):
     if not portal:
         abort(404)
 
-    form = StaffLoginForm() if portal["requires_owner_code"] else LoginForm()
+    form = LoginForm()
     if form.validate_on_submit():
         username = form.username.data.strip()
         if is_login_rate_limited(username):
             flash("Too many failed attempts. Please try again in 5 minutes.", "danger")
             return render_template("login.html", form=form, portal=portal, portal_key=portal_key)
-
-        if portal["requires_owner_code"]:
-            if not verify_owner_access_code(portal_key, form.owner_access_code.data):
-                record_failed_login(username)
-                flash("Invalid owner access code. Contact the system owner for access.", "danger")
-                return render_template("login.html", form=form, portal=portal, portal_key=portal_key)
 
         user = _find_user_by_login(username)
         allowed_roles = portal["roles"]
@@ -153,11 +145,9 @@ def register():
                 full_name=form.full_name.data,
                 role=form.role.data,
                 professional_credentials=(form.professional_credentials.data or "").strip() or None,
-                security_question=form.security_question.data,
                 is_active=True,
             )
             user.set_password(form.password.data)
-            user.set_security_answer(form.security_answer.data)
             db.session.add(user)
             db.session.commit()
             log_audit("register", "user", f"username={user.username}, role={user.role}")
@@ -170,30 +160,6 @@ def register():
 def forgot_password():
     if current_user.is_authenticated:
         return redirect_to_role_home()
-    method = request.args.get("method", "security")
-    if method == "email":
-        form = ForgotPasswordEmailForm()
-        if form.validate_on_submit():
-            user = _find_user_by_login(form.email.data)
-            if not user:
-                flash("If that email is registered, a reset link will be sent.", "info")
-                return redirect(url_for("auth.forgot_password", method="email"))
-            from datetime import datetime, timedelta
-            import secrets
-            from werkzeug.security import generate_password_hash
-
-            token = secrets.token_urlsafe(32)
-            PasswordResetToken.query.filter_by(user_id=user.id).delete()
-            db.session.add(PasswordResetToken(
-                user_id=user.id,
-                token_hash=generate_password_hash(token),
-                expires_at=datetime.utcnow() + timedelta(hours=1),
-            ))
-            db.session.commit()
-            reset_url = url_for("auth.reset_password_email", token=token, _external=True)
-            flash(f"Password reset link (demo): {reset_url}", "info")
-            return redirect(url_for("auth.user_login"))
-        return render_template("forgot_password.html", method="email", email_form=form)
 
     lookup_form = ForgotPasswordLookupForm()
     reset_form = ForgotPasswordForm()
@@ -201,42 +167,28 @@ def forgot_password():
     user = User.query.get(user_id) if user_id else None
 
     if user and reset_form.validate_on_submit():
-        if not user.check_security_answer(reset_form.security_answer.data):
-            flash("Incorrect security answer. Please try again.", "danger")
-        else:
-            user.set_password(reset_form.new_password.data)
-            session.pop("recovery_user_id", None)
-            db.session.commit()
-            log_audit("password_recovery", "user", f"username={user.username}, method=security")
-            flash("Password reset successful. Please log in.", "success")
-            return _redirect_login_for_role(user.role)
-        return render_template(
-            "forgot_password.html", method="security", user=user,
-            question_text=security_question_text(user.security_question),
-            reset_form=reset_form, lookup_form=lookup_form,
-        )
+        user.set_password(reset_form.new_password.data)
+        session.pop("recovery_user_id", None)
+        db.session.commit()
+        log_audit("password_recovery", "user", f"username={user.username}")
+        flash("Password reset successful. Please log in.", "success")
+        return _redirect_login_for_role(user.role)
 
     if lookup_form.validate_on_submit():
         user = _find_user_by_login(lookup_form.login.data)
         if not user:
             flash("No account found with that username or email.", "danger")
-        elif not user.security_answer_hash:
-            flash("No security question on file. Try email recovery or contact admin.", "warning")
-        else:
-            session["recovery_user_id"] = user.id
-            return redirect(url_for("auth.forgot_password", method="security"))
-        return render_template(
-            "forgot_password.html", method="security", lookup_form=lookup_form, reset_form=reset_form,
-        )
+            return render_template(
+                "forgot_password.html", lookup_form=lookup_form, reset_form=reset_form,
+            )
+        session["recovery_user_id"] = user.id
+        return redirect(url_for("auth.forgot_password"))
 
-    if user:
-        return render_template(
-            "forgot_password.html", method="security", user=user,
-            question_text=security_question_text(user.security_question),
-            reset_form=reset_form, lookup_form=lookup_form,
-        )
     return render_template(
-        "forgot_password.html", method="security", lookup_form=lookup_form, reset_form=reset_form,
+        "forgot_password.html",
+        user=user,
+        lookup_form=lookup_form,
+        reset_form=reset_form,
     )
 
 
@@ -279,14 +231,12 @@ def _redirect_login_for_role(role):
 
 @auth_bp.route("/register/admin", methods=["GET", "POST"])
 def register_admin():
-    """UC_08: Admin registration with owner access code."""
+    """UC_08: Admin registration."""
     if current_user.is_authenticated:
         return redirect_to_role_home()
     form = AdminRegisterForm()
     if form.validate_on_submit():
-        if not verify_owner_access_code("admin", form.owner_access_code.data):
-            flash("Invalid owner access code.", "danger")
-        elif User.query.filter_by(username=form.username.data).first():
+        if User.query.filter_by(username=form.username.data).first():
             flash("Username already exists.", "danger")
         elif User.query.filter_by(email=form.email.data).first():
             flash("Email already registered.", "danger")
@@ -296,11 +246,9 @@ def register_admin():
                 email=form.email.data,
                 full_name=form.full_name.data,
                 role="admin",
-                security_question=form.security_question.data,
                 is_active=True,
             )
             user.set_password(form.password.data)
-            user.set_security_answer(form.security_answer.data)
             db.session.add(user)
             db.session.commit()
             log_audit("register", "user", f"username={user.username}, role=admin")

@@ -97,18 +97,11 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_admin_notifications():
         from flask_login import current_user
-        from app.utils import get_unread_admin_feedback_count, get_unread_admin_reports_count, get_unread_doctor_forwards_count
+        from app.utils import get_unread_admin_feedback_count
 
-        ctx = {"admin_unread_reports": 0, "admin_unread_feedback": 0, "doctor_unread_forwards": 0, "patient_unread_remarks": 0}
-        if current_user.is_authenticated:
-            if current_user.is_admin:
-                ctx["admin_unread_reports"] = get_unread_admin_reports_count()
-                ctx["admin_unread_feedback"] = get_unread_admin_feedback_count()
-            if current_user.is_provider:
-                ctx["doctor_unread_forwards"] = get_unread_doctor_forwards_count(current_user.id)
-            if current_user.is_patient:
-                from app.utils import get_unread_doctor_remarks_count
-                ctx["patient_unread_remarks"] = get_unread_doctor_remarks_count(current_user.id)
+        ctx = {"admin_unread_feedback": 0}
+        if current_user.is_authenticated and current_user.is_admin:
+            ctx["admin_unread_feedback"] = get_unread_admin_feedback_count()
         return ctx
 
     with app.app_context():

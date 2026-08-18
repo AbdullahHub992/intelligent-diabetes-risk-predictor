@@ -3,59 +3,29 @@
 {% block content %}
 {% include 'includes/srs_page_header.html' %}
 <h2 class="mb-2">Admin Panel</h2>
-<p class="text-muted mb-4">Dataset ingestion, EDA, model training, account management, and system monitoring (SRS Admin Panel).</p>
+<p class="text-muted mb-4">Dataset ingestion, EDA, model training, account management, and system monitoring.</p>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><h6>Users</h6><h3>{{ user_count }}</h3></div></div></div>
-    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><h6>Doctors</h6><h3>{{ doctor_count }}</h3></div></div></div>
-    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><h6>Patients</h6><h3>{{ patient_count }}</h3></div></div></div>
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Models</h6><h3>{{ metrics|length }}</h3></div></div></div>
-    <div class="col-md-3"><div class="card stat-card bg-info text-white"><div class="card-body"><h6>Production</h6><small>{{ production_model or 'Not set' }}</small></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Users</h6><h3>{{ user_count }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Healthcare Providers</h6><h3>{{ doctor_count }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Patients</h6><h3>{{ patient_count }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Trained Models</h6><h3>{{ metrics|length }}</h3></div></div></div>
 </div>
-
-{% if unread_reports > 0 %}
-<div class="alert alert-warning border-warning admin-inbox-alert mb-4" role="alert">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div>
-            <strong>🔔 New notification:</strong>
-            {{ unread_reports }} patient report{{ 's' if unread_reports != 1 else '' }} waiting for you.
-        </div>
-        <a href="{{ url_for('admin.received_reports') }}" class="btn btn-warning btn-sm">View Reports</a>
-    </div>
-</div>
-{% endif %}
-
-{% if unread_feedback > 0 %}
-<div class="alert alert-info border-info admin-inbox-alert mb-4" role="alert">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div>
-            <strong>💬 New feedback:</strong>
-            {{ unread_feedback }} patient feedback item{{ 's' if unread_feedback != 1 else '' }} waiting for you.
-        </div>
-        <a href="{{ url_for('admin.view_feedback') }}" class="btn btn-info btn-sm text-white">View Feedback</a>
-    </div>
-</div>
-{% endif %}
 
 <div class="row g-4 mb-4">
     <div class="col-lg-4">
         <div class="card shadow-sm h-100 admin-action-card">
-            <div class="card-header bg-white fw-semibold">Users &amp; Access</div>
+            <div class="card-header bg-white fw-semibold">Account Management (FR-20)</div>
             <div class="card-body d-grid gap-2">
                 <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-primary text-start">Manage Users</a>
-                <a href="{{ url_for('admin.received_reports') }}" class="btn btn-warning text-start position-relative">
-                    Patient Reports Inbox
-                    {% if unread_reports > 0 %}
-                    <span class="badge bg-danger ms-1">{{ unread_reports }} new</span>
-                    {% endif %}
-                </a>
-                <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-outline-danger text-start">View Audit Logs</a>
+                <a href="{{ url_for('admin.create_user') }}" class="btn btn-outline-primary text-start">Create User</a>
+                <a href="{{ url_for('admin.manage_assignments') }}" class="btn btn-outline-primary text-start">Assign Patient to Provider (FR-13)</a>
             </div>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="card shadow-sm h-100 admin-action-card">
-            <div class="card-header bg-white fw-semibold">Machine Learning</div>
+            <div class="card-header bg-white fw-semibold">Machine Learning (FR-16 to FR-19)</div>
             <div class="card-body d-grid gap-2">
                 <a href="{{ url_for('admin.upload_dataset') }}" class="btn btn-primary text-start">Import Dataset</a>
                 <a href="{{ url_for('admin.eda') }}" class="btn btn-outline-primary text-start">Perform EDA &amp; Preprocessing</a>
@@ -67,20 +37,15 @@
     </div>
     <div class="col-lg-4">
         <div class="card shadow-sm h-100 admin-action-card">
-            <div class="card-header bg-white fw-semibold">Content &amp; Feedback</div>
+            <div class="card-header bg-white fw-semibold">Education &amp; Feedback</div>
             <div class="card-body d-grid gap-2">
-                <a href="{{ url_for('admin.manage_education') }}" class="btn btn-outline-info text-start">Manage Education</a>
-                <a href="{{ url_for('admin.view_feedback') }}" class="btn btn-outline-warning text-start position-relative">
-                    Patient Feedback Inbox
-                    {% if unread_feedback > 0 %}
-                    <span class="badge bg-danger ms-1">{{ unread_feedback }} new</span>
-                    {% else %}
-                    ({{ feedback_count }})
+                <a href="{{ url_for('admin.manage_education') }}" class="btn btn-outline-info text-start">Manage Education (FR-12)</a>
+                <a href="{{ url_for('admin.view_feedback') }}" class="btn btn-outline-warning text-start">
+                    Feedback for Retraining (FR-14 / FR-19)
+                    {% if pending_feedback %}
+                    <span class="badge bg-dark ms-1">{{ pending_feedback }}</span>
                     {% endif %}
                 </a>
-            </div>
-            <div class="card-footer bg-light small text-muted">
-                {{ pending_feedback }} feedback item(s) ready for retraining.
             </div>
         </div>
     </div>
@@ -91,7 +56,7 @@
         <div class="card shadow-sm">
             <div class="card-header">Model Performance</div>
             <table class="table table-hover mb-0">
-                <thead><tr><th>Model</th><th>Acc</th><th>Prec</th><th>Rec</th><th>F1</th><th>Best</th></tr></thead>
+                <thead><tr><th>Model</th><th>Acc</th><th>Prec</th><th>Rec</th><th>F1</th><th>Selected</th></tr></thead>
                 <tbody>
                 {% for m in metrics %}
                 <tr class="{% if m.is_best %}table-success{% endif %}">
@@ -100,10 +65,10 @@
                     <td>{{ '%.1f'|format(m.precision * 100) }}%</td>
                     <td>{{ '%.1f'|format(m.recall * 100) }}%</td>
                     <td>{{ '%.1f'|format(m.f1_score * 100) }}%</td>
-                    <td>{% if m.is_best %}Yes{% endif %}</td>
+                    <td>{% if m.is_best %}Best-performing{% endif %}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-muted">No models trained yet. Upload a dataset and train models.</td></tr>
+                <tr><td colspan="6" class="text-muted">No models trained yet. Import a dataset and train models.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
@@ -117,7 +82,7 @@
                 <li class="list-group-item small">
                     <strong>{{ j.job_type }}</strong> — {{ j.rows_used }} rows
                     {% if j.feedback_rows %}({{ j.feedback_rows }} feedback){% endif %}
-                    <br>Best: {{ j.best_model or 'N/A' }} | {{ j.started_at.strftime('%Y-%m-%d %H:%M') }}
+                    <br>Best-performing: {{ j.best_model or 'N/A' }} | {{ j.started_at.strftime('%Y-%m-%d %H:%M') }}
                 </li>
                 {% else %}
                 <li class="list-group-item text-muted">No training history yet.</li>

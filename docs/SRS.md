@@ -23,12 +23,12 @@ Web-based ML decision-support system for diabetes risk prediction using clinical
 
 | ID | Requirement | Website Feature |
 |----|-------------|-----------------|
-| **FR-01** | User registration (Patient / Provider with credentials, security question, consent) | User Registration (`/register`) |
+| **FR-01** | User registration (Patient / Healthcare Provider with credentials) | User Registration (`/register`) |
 | **FR-02** | User login with RBAC (User Panel + Admin Panel) | User Login, Admin Login |
-| **FR-03** | Password recovery (security questions or email) | Forgot Password |
+| **FR-03** | Password recovery | Forgot Password |
 | **FR-04** | Password change (current password required) | Change Password |
 | **FR-05** | Profile management (contact info, baseline metrics) | My Profile |
-| **FR-06** | Health data input & prediction (glucose, BP, BMI, age, habits, confidence) | Predict Risk → Generate Prediction |
+| **FR-06** | Health data input and risk prediction (8 dataset features + habits, confidence) | Predict Risk → Generate Prediction |
 | **FR-07** | Prediction history & longitudinal tracking | Prediction History, Longitudinal Tracking |
 | **FR-08** | Risk factor analysis & explanation | Explain Result on prediction detail |
 | **FR-09** | Personalized recommendations | Recommendations panel after prediction |
@@ -48,9 +48,9 @@ Web-based ML decision-support system for diabetes risk prediction using clinical
 
 | ID | SRS Requirement | Implementation |
 |----|-----------------|----------------|
-| FR-01 | User registration (Patient / Provider) | `auth.register` — User role with profile subtype |
+| FR-01 | User registration (Patient / Healthcare Provider) | `auth.register` — User role with profile subtype |
 | FR-02 | User login with RBAC | `auth.user_login` (User) and `auth.login_admin` (Admin) |
-| FR-03 | Password recovery | `auth.forgot_password` (security questions + email) |
+| FR-03 | Password recovery | `auth.forgot_password` (registered username or email) |
 | FR-04 | Password change | `auth.change_password` (current password required) |
 | FR-05 | Profile management | `auth.profile_settings` (all roles) |
 | FR-06 | Health data input & prediction | `main.health_data` — Generate Prediction |
@@ -71,7 +71,7 @@ Web-based ML decision-support system for diabetes risk prediction using clinical
 
 ### 4. Non-Functional Requirements
 - **Performance:** Near real-time predictions (2–3 seconds)
-- **Security:** Password hashing, RBAC, CSRF, HTTPS-ready, audit trail
+- **Security:** Password hashing, RBAC, CSRF, HTTPS-ready
 - **Usability:** Responsive Bootstrap UI, color-coded risk indicators
 - **Compatibility:** Cross-browser, mobile-responsive
 - **Maintainability:** Modular ML pipeline separate from web backend

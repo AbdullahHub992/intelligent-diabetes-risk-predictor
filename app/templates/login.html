@@ -11,27 +11,12 @@
                 </div>
                 <h3 class="mb-1 text-center">{{ portal.title }}</h3>
                 <p class="text-muted text-center mb-4">{{ portal.subtitle }}</p>
-                {% if portal.requires_owner_code %}
-                <div class="alert alert-warning small py-2">Admin accounts require the owner access code.</div>
-                {% endif %}
                 <form method="POST">
                     {{ form.hidden_tag() }}
-                    {% if portal.requires_owner_code %}
-                    <div class="mb-3">
-                        {{ form.owner_access_code.label(class="form-label fw-semibold") }}
-                        {{ form.owner_access_code(class="form-control", placeholder="Enter owner access code", autocomplete="new-password") }}
-                        <div class="form-text">Use the <strong>admin</strong> access code provided by the system owner.</div>
-                    </div>
-                    <hr>
-                    {% endif %}
                     <div class="mb-3">
                         {{ form.username.label(class="form-label") }}
                         {{ form.username(class="form-control", placeholder="Username or email") }}
-                        {% if portal_key == 'user' %}
                         <div class="form-text">Use the username or email from registration — not your full name.</div>
-                        {% else %}
-                        <div class="form-text">Use the username given to you by the owner.</div>
-                        {% endif %}
                     </div>
                     <div class="mb-3">{{ form.password.label(class="form-label") }}{{ form.password(class="form-control", placeholder="Enter password") }}</div>
                     <div class="form-check mb-3">{{ form.remember(class="form-check-input") }}{{ form.remember.label(class="form-check-label") }}</div>

@@ -52,8 +52,7 @@
                 <td>
                     <a href="{{ url_for('main.edit_health_record', record_id=record.id) }}" class="btn btn-sm btn-outline-primary">Update Values</a>
                     {% if pred %}
-                    <a href="{{ url_for('main.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-secondary">Details</a>
-                    <a href="{{ url_for('main.send_report_to_admin', prediction_id=pred.id) }}" class="btn btn-sm btn-success">Send to Admin</a>
+                    <a href="{{ url_for('main.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-secondary">Explain Result</a>
                     {% endif %}
                 </td>
             </tr>

@@ -14,7 +14,6 @@
                 {% if record %}
                 <hr>
                 <a href="{{ url_for('main.edit_health_record', record_id=record.id) }}" class="btn btn-sm btn-outline-primary w-100 mb-2">Update Health Values</a>
-                <a href="{{ url_for('main.send_report_to_admin', prediction_id=prediction.id) }}" class="btn btn-sm btn-success w-100">Send This Report to Admin</a>
                 {% endif %}
             </div>
         </div>

@@ -29,14 +29,6 @@
                         <div class="col-md-6 mb-3">{{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}</div>
                         <div class="col-md-6 mb-3">{{ form.confirm_password.label(class="form-label") }}{{ form.confirm_password(class="form-control") }}</div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">{{ form.security_question.label(class="form-label") }}{{ form.security_question(class="form-select") }}</div>
-                        <div class="col-md-6 mb-3">{{ form.security_answer.label(class="form-label") }}{{ form.security_answer(class="form-control") }}</div>
-                    </div>
-                    <div class="form-check mb-3">
-                        {{ form.consent(class="form-check-input") }}
-                        {{ form.consent.label(class="form-check-label") }}
-                    </div>
                     {{ form.submit(class="btn btn-primary w-100") }}
                 </form>
             </div>

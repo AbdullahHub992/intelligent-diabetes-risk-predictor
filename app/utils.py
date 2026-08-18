@@ -2,7 +2,7 @@ from flask import redirect, request, url_for
 from flask_login import current_user
 
 from app import db
-from app.models import AdminReportSubmission, AuditLog, DoctorReportForward, DoctorReportRemark, Feedback, ProviderPatient, SystemConfig
+from app.models import AuditLog, Feedback, ProviderPatient, SystemConfig
 
 
 SECURITY_QUESTION_LABELS = {
@@ -119,108 +119,5 @@ def provider_can_access_patient(provider_id, patient_id, is_admin=False):
     ).first() is not None
 
 
-def get_unread_admin_reports_count():
-    return AdminReportSubmission.query.filter_by(is_read=False).count()
-
-
 def get_unread_admin_feedback_count():
     return Feedback.query.filter_by(is_read=False).count()
-
-
-def get_unread_doctor_forwards_count(provider_id):
-    return DoctorReportForward.query.filter_by(provider_id=provider_id, is_read=False).count()
-
-
-def get_unread_doctor_remarks_count(patient_id):
-    return DoctorReportRemark.query.filter_by(patient_id=patient_id, is_read=False).count()
-
-
-def get_patient_doctor_remarks(patient_id):
-    return DoctorReportRemark.query.filter_by(patient_id=patient_id).order_by(
-        DoctorReportRemark.created_at.desc()
-    ).all()
-
-
-def parse_admin_report_display_data(report):
-    """Build template-friendly dict from an AdminReportSubmission."""
-    import json
-
-    from app.ml.recommendations import parse_stored_recommendations
-
-    try:
-        summary = json.loads(report.report_summary or "{}")
-    except (json.JSONDecodeError, TypeError):
-        summary = {}
-    if not isinstance(summary, dict):
-        summary = {}
-
-    prediction = report.prediction
-    health = summary.get("health") if isinstance(summary.get("health"), dict) else {}
-    explanation = summary.get("explanation") or []
-    if isinstance(explanation, str):
-        try:
-            explanation = json.loads(explanation)
-        except json.JSONDecodeError:
-            explanation = []
-    if not isinstance(explanation, list):
-        explanation = []
-
-    recommendation_plan = None
-    if prediction:
-        recommendation_plan = parse_stored_recommendations(prediction)
-    if not recommendation_plan:
-        rec_text = summary.get("recommendations")
-        if isinstance(rec_text, str) and rec_text.strip().startswith("{"):
-            try:
-                recommendation_plan = json.loads(rec_text)
-            except json.JSONDecodeError:
-                recommendation_plan = None
-
-    return {
-        "summary": summary,
-        "health": health,
-        "explanation": explanation,
-        "recommendation_plan": recommendation_plan,
-        "prediction": prediction,
-    }
-
-
-def build_admin_report_snapshot(patient, prediction, record, message=None):
-    import json
-
-    explanation = []
-    if prediction.explanation:
-        try:
-            explanation = json.loads(prediction.explanation)
-        except json.JSONDecodeError:
-            explanation = []
-
-    health = None
-    if record:
-        health = {
-            "sex": record.sex,
-            "pregnancies": record.pregnancies,
-            "glucose": record.glucose,
-            "systolic": record.systolic,
-            "diastolic": record.diastolic,
-            "skin_thickness": record.skin_thickness,
-            "insulin": record.insulin,
-            "bmi": record.bmi,
-            "diabetes_pedigree": record.diabetes_pedigree,
-            "age": record.age,
-            "recorded_at": record.recorded_at.isoformat() if record.recorded_at else None,
-        }
-
-    return json.dumps({
-        "patient_name": patient.full_name,
-        "patient_username": patient.username,
-        "patient_email": patient.email,
-        "prediction_date": prediction.created_at.isoformat() if prediction.created_at else None,
-        "model_name": prediction.model_name,
-        "probability": prediction.probability,
-        "risk_level": prediction.risk_level,
-        "message": message or "",
-        "health": health,
-        "explanation": explanation,
-        "recommendations": prediction.recommendations,
-    })

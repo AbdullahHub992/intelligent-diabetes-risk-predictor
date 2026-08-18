@@ -10,7 +10,7 @@ from app import db
 from app.decorators import role_required
 from app.forms import (
     AssignDoctorPatientForm, CreateUserForm, DatasetUploadForm, EducationForm,
-    ForwardReportToDoctorsForm, ModelSelectForm, ResetPasswordForm, UserEditForm,
+    ModelSelectForm, ResetPasswordForm, UserEditForm,
 )
 from app.ml.pipeline import MODEL_BUILDERS, clean_data, generate_eda, load_dataset, train_all_models
 from app.ml.predictor import clear_model_cache
@@ -18,12 +18,12 @@ from app.ml.retrain import retrain_with_feedback
 from app.ml.validators import validate_dataset_columns
 from app.ml.reports import generate_eda_pdf
 from app.models import (
-    AdminReportSubmission, AuditLog, Dataset, DoctorReportForward, EducationResource,
+    Dataset, EducationResource,
     Feedback, HealthRecord, ModelMetrics, ProviderPatient, TrainingJob, User,
 )
 from app.utils import (
-    get_production_model_name, get_unread_admin_feedback_count, get_unread_admin_reports_count,
-    log_audit, parse_admin_report_display_data, set_production_model_name,
+    get_production_model_name, get_unread_admin_feedback_count,
+    log_audit, set_production_model_name,
 )
 
 admin_bp = Blueprint("admin", __name__)
@@ -48,7 +48,6 @@ def admin_dashboard():
         assignment_count=ProviderPatient.query.count(),
         doctor_count=User.query.filter_by(role="provider", is_active=True).count(),
         patient_count=User.query.filter_by(role="patient", is_active=True).count(),
-        unread_reports=get_unread_admin_reports_count(),
         unread_feedback=get_unread_admin_feedback_count(),
         jobs=jobs,
         production_model=get_production_model_name(),
@@ -490,124 +489,9 @@ def mark_all_feedback_read():
     return redirect(url_for("admin.view_feedback"))
 
 
-@admin_bp.route("/audit-logs")
-@login_required
-@role_required("admin")
-def audit_logs():
-    logs = AuditLog.query.order_by(AuditLog.created_at.desc()).limit(200).all()
-    return render_template("admin/audit_logs.html", logs=logs)
-
-
 @admin_bp.route("/training-history")
 @login_required
 @role_required("admin")
 def training_history():
     jobs = TrainingJob.query.order_by(TrainingJob.started_at.desc()).all()
     return render_template("admin/training_history.html", jobs=jobs)
-
-
-@admin_bp.route("/received-reports")
-@login_required
-@role_required("admin")
-def received_reports():
-    reports = AdminReportSubmission.query.order_by(
-        AdminReportSubmission.created_at.desc()
-    ).all()
-    return render_template(
-        "admin/received_reports.html",
-        reports=reports,
-        unread_count=get_unread_admin_reports_count(),
-    )
-
-
-@admin_bp.route("/received-reports/<int:report_id>", methods=["GET", "POST"])
-@login_required
-@role_required("admin")
-def view_received_report(report_id):
-    report = AdminReportSubmission.query.get_or_404(report_id)
-    doctors = User.query.filter_by(role="provider", is_active=True).order_by(User.full_name).all()
-    existing_forwards = DoctorReportForward.query.filter_by(admin_report_id=report.id).all()
-    already_sent_ids = {f.provider_id for f in existing_forwards}
-
-    forward_form = ForwardReportToDoctorsForm()
-    forward_form.provider_ids.choices = [
-        (d.id, f"{d.full_name} (@{d.username})") for d in doctors if d.id not in already_sent_ids
-    ]
-
-    try:
-        if request.method == "GET" and not report.is_read:
-            report.is_read = True
-            db.session.commit()
-            log_audit("read_admin_report", "admin_report", f"id={report_id}")
-
-        if forward_form.validate_on_submit():
-            if not forward_form.provider_ids.data:
-                flash("Please select at least one doctor.", "warning")
-            else:
-                sent_names = []
-                for provider_id in forward_form.provider_ids.data:
-                    doctor = User.query.get(provider_id)
-                    if not doctor or doctor.role != "provider" or not doctor.is_active:
-                        continue
-                    if DoctorReportForward.query.filter_by(
-                        admin_report_id=report.id, provider_id=provider_id
-                    ).first():
-                        continue
-                    db.session.add(DoctorReportForward(
-                        admin_report_id=report.id,
-                        provider_id=provider_id,
-                        forwarded_by=current_user.id,
-                        admin_note=forward_form.admin_note.data,
-                        is_read=False,
-                    ))
-                    sent_names.append(doctor.full_name)
-                db.session.commit()
-                if sent_names:
-                    log_audit(
-                        "forward_report_to_doctors", "admin_report",
-                        f"report_id={report.id}, doctors={','.join(sent_names)}",
-                    )
-                    flash(
-                        f"Report sent to {len(sent_names)} doctor(s): {', '.join(sent_names)}.",
-                        "success",
-                    )
-                else:
-                    flash("No new doctors were selected or all were already sent this report.", "warning")
-                return redirect(url_for("admin.view_received_report", report_id=report.id))
-
-        display = parse_admin_report_display_data(report)
-        return render_template(
-            "admin/report_detail.html",
-            report=report,
-            forward_form=forward_form,
-            doctors=doctors,
-            existing_forwards=existing_forwards,
-            already_sent_ids=already_sent_ids,
-            **display,
-        )
-    except Exception as exc:
-        db.session.rollback()
-        current_app.logger.exception("Failed to open admin report %s", report_id)
-        flash(f"Could not open this report: {exc}", "danger")
-        return redirect(url_for("admin.received_reports"))
-
-
-@admin_bp.route("/received-reports/<int:report_id>/mark-read", methods=["POST"])
-@login_required
-@role_required("admin")
-def mark_report_read(report_id):
-    report = AdminReportSubmission.query.get_or_404(report_id)
-    report.is_read = True
-    db.session.commit()
-    flash("Report marked as read.", "success")
-    return redirect(url_for("admin.received_reports"))
-
-
-@admin_bp.route("/received-reports/mark-all-read", methods=["POST"])
-@login_required
-@role_required("admin")
-def mark_all_reports_read():
-    AdminReportSubmission.query.filter_by(is_read=False).update({"is_read": True})
-    db.session.commit()
-    flash("All patient reports marked as read.", "success")
-    return redirect(url_for("admin.received_reports"))

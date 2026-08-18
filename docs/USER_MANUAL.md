@@ -1,34 +1,34 @@
 # User Manual
 
-## Patient
-1. Register with consent checkbox
-2. Login → Dashboard
-3. **Health Data** — enter vitals, get ML prediction
-4. **Progress** — view trends over time
-5. **Education** — read prevention resources
-6. **Feedback** — rate predictions, submit actual clinical outcome
-7. Export **PDF/CSV** reports from dashboard
+## User (Patient)
+1. Register as Patient with username, email, full name, and password
+2. User Login → User Dashboard
+3. **Predict Risk** — enter the eight clinical features plus lifestyle habits
+4. **Explain Result** and **Recommendations** after prediction
+5. **Prediction History** and **Longitudinal Tracking**
+6. **Education** — prevention and lifestyle resources
+7. **Feedback** — rate predictions / submit actual outcome
+8. **Export Report** — PDF or CSV
+9. **My Profile** / **Change Password** / **Logout**
 
-## Healthcare Provider
-1. Login as doctor (assigned patients only)
-2. **Clinical** dashboard — high-risk cases, patient list
-3. View patient records, charts, predictions
-4. **Clinical Support** — ML risk analysis + add clinical notes
-5. Export patient reports (PDF/CSV)
-6. Submit feedback on predictions
+## User (Healthcare Provider)
+1. Register as Healthcare Provider, or log in with User Login
+2. Same User Panel features as a Patient
+3. **Clinical** — review assigned patients, predictions, and add clinical notes (FR-13)
 
-## Administrator
-1. **Upload Dataset** — CSV with required columns
-2. **EDA** — view statistics and charts, export PDF
-3. **Train Models** — train all 4 algorithms
-4. **Model Settings** — set production model
-5. **Feedback** — retrain with verified outcomes
-6. **Users** — edit roles, activate/deactivate, reset passwords
-7. **Assignments** — link providers to patients
-8. **Education** — manage content
-9. **Audit Logs** — security monitoring
+## Admin
+1. Admin Registration / Admin Login
+2. **Import Dataset** — CSV with required columns
+3. **EDA** — statistics, charts, 70/30 preprocessing
+4. **Train Models** — Neural Network, SVM, Decision Tree, Logistic Regression
+5. **Model Settings** / **Training History** — persist and select the best-performing model
+6. **Feedback** — retrain from verified outcomes
+7. **Account Management** — create, edit, activate/deactivate users
+8. **Assign Patient to Provider** — so Clinical (FR-13) can review patients
+9. **Education** — manage published resources
+10. **My Profile** / **Change Password** / **Logout**
 
 ## Demo Accounts
-- admin / admin123
-- doctor / doctor123
-- patient / patient123
+- User (Patient): patient / patient123
+- User (Healthcare Provider): doctor / doctor123
+- Admin: admin / admin123

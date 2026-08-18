@@ -3,23 +3,12 @@
 {% block content %}
 {% include 'includes/srs_page_header.html' %}
 <h2 class="mb-4">Clinical Decision Support (FR-13)</h2>
-<p class="text-muted">ML-based insights to support — not replace — professional clinical judgment.</p>
-
-{% if unread_forwards > 0 %}
-<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-    <div>
-        <strong>🔔 {{ unread_forwards }} new patient report{{ 's' if unread_forwards != 1 else '' }}</strong>
-        forwarded to you by admin.
-    </div>
-    <a href="{{ url_for('provider.forwarded_reports') }}" class="btn btn-warning btn-sm">View Reports</a>
-</div>
-{% endif %}
+<p class="text-muted">Healthcare providers review assigned patients and predictions to support — not replace — professional clinical judgment.</p>
 
 <div class="row g-4 mb-4">
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Assigned Patients</h6><h2>{{ patients|length }}</h2></div></div></div>
-    <div class="col-md-3"><div class="card stat-card bg-danger text-white"><div class="card-body"><h6>High Risk Cases</h6><h2>{{ high_risk_count }}</h2></div></div></div>
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Recent Predictions</h6><h2>{{ recent_predictions|length }}</h2></div></div></div>
-    <div class="col-md-3"><div class="card stat-card bg-success text-white"><div class="card-body"><h6>Admin Reports</h6><h2>{{ total_forwards }}</h2>{% if unread_forwards > 0 %}<span class="small">{{ unread_forwards }} new</span>{% endif %}<a href="{{ url_for('provider.forwarded_reports') }}" class="text-white small d-block">View all</a></div></div></div>
+    <div class="col-md-4"><div class="card stat-card"><div class="card-body"><h6>Assigned Patients</h6><h2>{{ patients|length }}</h2></div></div></div>
+    <div class="col-md-4"><div class="card stat-card bg-danger text-white"><div class="card-body"><h6>High Risk Cases</h6><h2>{{ high_risk_count }}</h2></div></div></div>
+    <div class="col-md-4"><div class="card stat-card"><div class="card-body"><h6>Recent Predictions</h6><h2>{{ recent_predictions|length }}</h2></div></div></div>
 </div>
 <div class="row g-4">
     <div class="col-md-5">

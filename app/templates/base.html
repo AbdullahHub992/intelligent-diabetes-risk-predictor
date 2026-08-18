@@ -18,72 +18,38 @@
             <div class="collapse navbar-collapse" id="nav">
                 {% if current_user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
-                    {% if current_user.is_patient %}
+                    {% if current_user.is_user %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.dashboard') }}">User Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.health_data') }}">Predict Risk</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.my_health_records') }}">Prediction History</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.progress') }}">Longitudinal Tracking</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.education') }}">Education</a></li>
+                    {% if current_user.is_provider %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('provider.provider_dashboard') }}">Clinical</a></li>
+                    {% endif %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.profile_settings') }}">My Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.feedback') }}">Feedback</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.export_report') }}">Export Report</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link position-relative" href="{{ url_for('main.patient_notifications') }}">
-                            Notifications
-                            {% if patient_unread_remarks > 0 %}
-                            <span class="admin-nav-badge">{{ patient_unread_remarks }}</span>
-                            {% endif %}
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% if current_user.is_provider %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.profile_settings') }}">My Profile</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.education') }}">Education</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.feedback') }}">Feedback</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link position-relative" href="{{ url_for('provider.forwarded_reports') }}">
-                            Admin Reports
-                            {% if doctor_unread_forwards > 0 %}
-                            <span class="admin-nav-badge">{{ doctor_unread_forwards }}</span>
-                            {% endif %}
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% if current_user.is_provider or current_user.is_admin %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('provider.provider_dashboard') }}">Clinical</a></li>
                     {% endif %}
                     {% if current_user.is_admin %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin Panel</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.upload_dataset') }}">Import Dataset</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.eda') }}">EDA</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.train_models') }}">Train Models</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.manage_users') }}">Account Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.profile_settings') }}">My Profile</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link position-relative" href="{{ url_for('admin.received_reports') }}">
-                            Patient Reports
-                            {% if admin_unread_reports > 0 %}
-                            <span class="admin-nav-badge">{{ admin_unread_reports }}</span>
-                            {% endif %}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link position-relative" href="{{ url_for('admin.view_feedback') }}">
-                            Patient Feedback
-                            {% if admin_unread_feedback > 0 %}
-                            <span class="admin-nav-badge">{{ admin_unread_feedback }}</span>
-                            {% endif %}
-                        </a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a></li>
                     {% endif %}
                 </ul>
                 <span class="navbar-text text-white me-3">
                     {{ current_user.full_name }}
                     {% if current_user.is_admin %}
                     <span class="badge bg-dark ms-1">Admin</span>
+                    {% elif current_user.is_provider %}
+                    <span class="badge bg-light text-dark ms-1">User (Healthcare Provider)</span>
                     {% else %}
-                    <span class="badge bg-light text-dark ms-1">User</span>
-                    {% if current_user.is_provider %}
-                    <span class="badge bg-success ms-1">Provider</span>
-                    {% endif %}
+                    <span class="badge bg-light text-dark ms-1">User (Patient)</span>
                     {% endif %}
                 </span>
                 <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Logout</a>

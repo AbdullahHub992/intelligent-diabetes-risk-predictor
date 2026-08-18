@@ -15,7 +15,7 @@
         <div class="card shadow-sm {% if m.is_best %}border-success{% endif %}">
             <div class="card-header d-flex justify-content-between">
                 <span>{{ m.model_name }}</span>
-                {% if m.is_best %}<span class="badge bg-success">Best (F1)</span>{% endif %}
+                {% if m.is_best %}<span class="badge bg-success">Best-performing</span>{% endif %}
             </div>
             <div class="card-body">
                 <p>Accuracy: {{ '%.2f'|format(m.accuracy * 100) }}% | Precision: {{ '%.2f'|format(m.precision * 100) }}% | Recall: {{ '%.2f'|format(m.recall * 100) }}% | F1: {{ '%.2f'|format(m.f1_score * 100) }}%</p>

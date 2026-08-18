@@ -131,9 +131,7 @@ def main():
         ("/my-health-records", "Health records", False),
         ("/progress", "Progress page", False),
         ("/education", "Education page", False),
-        ("/send-report-to-admin", "Send to admin", True),
         ("/feedback", "Feedback page", False),
-        ("/notifications", "Notifications page", False),
     ]:
         r = client.get(path)
         if r.status_code == 200:
@@ -163,7 +161,6 @@ def main():
         ("/admin/upload-dataset", "Dataset upload"),
         ("/admin/eda", "EDA page"),
         ("/admin/train-models", "Train models"),
-        ("/admin/received-reports", "Received reports"),
         ("/profile", "Admin profile"),
     ]:
         r = client.get(path)
@@ -184,9 +181,8 @@ def main():
         fail("Doctor login failed")
 
     for path, label in [
-        ("/provider/", "Doctor dashboard"),
-        ("/provider/forwarded-reports", "Forwarded reports"),
-        ("/profile", "Doctor profile"),
+        ("/provider/", "Clinical dashboard"),
+        ("/profile", "Provider profile"),
     ]:
         r = client.get(path)
         if r.status_code == 200:
