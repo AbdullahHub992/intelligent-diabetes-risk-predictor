@@ -4,7 +4,43 @@ from wtforms import (
     BooleanField, FloatField, IntegerField, PasswordField,
     SelectField, StringField, SubmitField, TextAreaField,
 )
-from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Length, NumberRange, Optional, URL
+from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Length, NumberRange, Optional, URL, ValidationError
+
+import socket
+
+
+BLOCKED_EMAIL_DOMAINS = {
+    "example.com", "example.net", "example.org", "test.com", "localhost",
+    "invalid", "mailinator.com", "tempmail.com",
+}
+
+
+class EmailDomainReachable:
+    """Reject emails whose domain has no DNS record."""
+
+    def __init__(self, message=None):
+        self.message = message or (
+            "That email domain could not be found. Enter a real address such as your Gmail or university email."
+        )
+
+    def __call__(self, form, field):
+        email = (field.data or "").strip().lower()
+        if "@" not in email:
+            raise ValidationError(self.message)
+        domain = email.rsplit("@", 1)[-1]
+        if not domain or "." not in domain or domain in BLOCKED_EMAIL_DOMAINS:
+            raise ValidationError(self.message)
+        previous_timeout = socket.getdefaulttimeout()
+        try:
+            socket.setdefaulttimeout(3)
+            socket.getaddrinfo(domain, None)
+        except OSError:
+            raise ValidationError(self.message)
+        finally:
+            socket.setdefaulttimeout(previous_timeout)
+
+
+REAL_EMAIL = [DataRequired(), Email(), EmailDomainReachable()]
 
 
 class LoginForm(FlaskForm):
@@ -17,7 +53,7 @@ class LoginForm(FlaskForm):
 class ProfileSettingsForm(FlaskForm):
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    email = StringField("Email", validators=REAL_EMAIL)
     phone = StringField("Phone", validators=[Optional(), Length(max=30)])
     address = StringField("Address", validators=[Optional(), Length(max=255)])
     baseline_height_cm = FloatField("Baseline Height (cm)", validators=[Optional(), NumberRange(min=50, max=250)])
@@ -59,7 +95,11 @@ class ChangePasswordForm(FlaskForm):
 
 class RegisterForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    email = StringField("Email", validators=REAL_EMAIL)
+    confirm_email = StringField(
+        "Confirm Email",
+        validators=[DataRequired(), EqualTo("email", message="Email addresses must match")],
+    )
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     role = SelectField(
         "Register As",
@@ -103,7 +143,11 @@ class ForgotPasswordEmailForm(FlaskForm):
 
 class AdminRegisterForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    email = StringField("Email", validators=REAL_EMAIL)
+    confirm_email = StringField(
+        "Confirm Email",
+        validators=[DataRequired(), EqualTo("email", message="Email addresses must match")],
+    )
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
     confirm_password = PasswordField(
@@ -115,7 +159,7 @@ class AdminRegisterForm(FlaskForm):
 
 class CreateUserForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    email = StringField("Email", validators=REAL_EMAIL)
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     role = SelectField("Role", choices=[
         ("patient", "User (Patient)"),
@@ -284,7 +328,7 @@ class FeedbackForm(FlaskForm):
 
 class UserEditForm(FlaskForm):
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    email = StringField("Email", validators=REAL_EMAIL)
     role = SelectField("Role", choices=[
         ("patient", "User (Patient)"),
         ("provider", "User (Healthcare Provider)"),

@@ -15,10 +15,26 @@
                 <form method="POST" id="registerForm">
                     {{ form.hidden_tag() }}
                     <div class="row">
-                        <div class="col-md-6 mb-3">{{ form.username.label(class="form-label") }}{{ form.username(class="form-control") }}</div>
-                        <div class="col-md-6 mb-3">{{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}</div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.username.label(class="form-label") }}{{ form.username(class="form-control") }}
+                            {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors[0] }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.full_name.label(class="form-label") }}{{ form.full_name(class="form-control") }}
+                            {% if form.full_name.errors %}<div class="text-danger small mt-1">{{ form.full_name.errors[0] }}</div>{% endif %}
+                        </div>
                     </div>
-                    <div class="mb-3">{{ form.full_name.label(class="form-label") }}{{ form.full_name(class="form-control") }}</div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.email.label(class="form-label") }}{{ form.email(class="form-control", placeholder="yourname@gmail.com") }}
+                            {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors[0] }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.confirm_email.label(class="form-label") }}{{ form.confirm_email(class="form-control", placeholder="Type the same email again") }}
+                            {% if form.confirm_email.errors %}<div class="text-danger small mt-1">{{ form.confirm_email.errors[0] }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <p class="small text-muted">Use a real email and type it twice. If you already registered with a wrong email, log in with your <strong>username</strong> and change it in My Profile.</p>
                     <div class="row">
                         <div class="col-md-6 mb-3">{{ form.role.label(class="form-label") }}{{ form.role(class="form-select", id="roleSelect") }}</div>
                         <div class="col-md-6 mb-3" id="credentialsField">
@@ -27,8 +43,14 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">{{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}</div>
-                        <div class="col-md-6 mb-3">{{ form.confirm_password.label(class="form-label") }}{{ form.confirm_password(class="form-control") }}</div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}
+                            {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors[0] }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.confirm_password.label(class="form-label") }}{{ form.confirm_password(class="form-control") }}
+                            {% if form.confirm_password.errors %}<div class="text-danger small mt-1">{{ form.confirm_password.errors[0] }}</div>{% endif %}
+                        </div>
                     </div>
                     {{ form.submit(class="btn btn-primary w-100") }}
                 </form>

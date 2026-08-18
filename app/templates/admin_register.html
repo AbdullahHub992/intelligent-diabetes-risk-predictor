@@ -13,7 +13,14 @@
                     {{ form.hidden_tag() }}
                     <div class="row">
                         <div class="col-md-6 mb-3">{{ form.username.label(class="form-label") }}{{ form.username(class="form-control") }}</div>
-                        <div class="col-md-6 mb-3">{{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}</div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}
+                            {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors[0] }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.confirm_email.label(class="form-label") }}{{ form.confirm_email(class="form-control") }}
+                        {% if form.confirm_email.errors %}<div class="text-danger small mt-1">{{ form.confirm_email.errors[0] }}</div>{% endif %}
                     </div>
                     <div class="mb-3">{{ form.full_name.label(class="form-label") }}{{ form.full_name(class="form-control") }}</div>
                     <div class="row">
