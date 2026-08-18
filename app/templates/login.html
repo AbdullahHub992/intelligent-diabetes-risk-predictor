@@ -11,6 +11,7 @@
                 </div>
                 <h3 class="mb-1 text-center">{{ portal.title }}</h3>
                 <p class="text-muted text-center mb-4">{{ portal.subtitle }}</p>
+                {% include 'includes/live_demo_notice.html' %}
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     <div class="mb-3">

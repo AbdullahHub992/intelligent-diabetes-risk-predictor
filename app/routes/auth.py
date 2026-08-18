@@ -42,18 +42,42 @@ PORTAL_LABELS = {
 }
 
 
+def _normalize_username(value):
+    return (value or "").strip()
+
+
+def _normalize_email(value):
+    return (value or "").strip().lower()
+
+
 def _find_user_by_login(login_value):
     from sqlalchemy import func
 
-    login_value = login_value.strip()
+    login_value = (login_value or "").strip()
     if not login_value:
         return None
-    user = User.query.filter_by(username=login_value).first()
+    user = User.query.filter(func.lower(User.username) == login_value.lower()).first()
     if user:
         return user
-    if "@" in login_value:
-        return User.query.filter(func.lower(User.email) == login_value.lower()).first()
-    return None
+    return User.query.filter(func.lower(User.email) == login_value.lower()).first()
+
+
+def _email_taken(email, ignore_user_id=None):
+    from sqlalchemy import func
+
+    query = User.query.filter(func.lower(User.email) == _normalize_email(email))
+    if ignore_user_id:
+        query = query.filter(User.id != ignore_user_id)
+    return query.first()
+
+
+def _username_taken(username, ignore_user_id=None):
+    from sqlalchemy import func
+
+    query = User.query.filter(func.lower(User.username) == _normalize_username(username).lower())
+    if ignore_user_id:
+        query = query.filter(User.id != ignore_user_id)
+    return query.first()
 
 
 def _handle_login(portal_key):
@@ -66,7 +90,7 @@ def _handle_login(portal_key):
 
     form = LoginForm()
     if form.validate_on_submit():
-        username = form.username.data.strip()
+        username = _normalize_username(form.username.data)
         if is_login_rate_limited(username):
             flash("Too many failed attempts. Please try again in 5 minutes.", "danger")
             return render_template("login.html", form=form, portal=portal, portal_key=portal_key)
@@ -132,17 +156,19 @@ def register():
         return redirect_to_role_home()
     form = RegisterForm()
     if form.validate_on_submit():
-        if User.query.filter_by(username=form.username.data).first():
+        username = _normalize_username(form.username.data)
+        email = _normalize_email(form.email.data)
+        if _username_taken(username):
             flash("Username already exists.", "danger")
-        elif User.query.filter_by(email=form.email.data).first():
+        elif _email_taken(email):
             flash("Email already registered.", "danger")
         elif form.role.data == "provider" and not (form.professional_credentials.data or "").strip():
             flash("Healthcare providers must provide professional credentials (e.g. license or hospital ID).", "danger")
         else:
             user = User(
-                username=form.username.data,
-                email=form.email.data,
-                full_name=form.full_name.data,
+                username=username,
+                email=email,
+                full_name=form.full_name.data.strip(),
                 role=form.role.data,
                 professional_credentials=(form.professional_credentials.data or "").strip() or None,
                 is_active=True,
@@ -151,8 +177,13 @@ def register():
             db.session.add(user)
             db.session.commit()
             log_audit("register", "user", f"username={user.username}, role={user.role}")
-            flash("Registration successful. Please log in.", "success")
-            return redirect(url_for("auth.user_login"))
+            login_user(user)
+            flash(
+                f"Registration successful. You are signed in as {user.username}. "
+                "Use User Login with this username or email next time.",
+                "success",
+            )
+            return redirect_to_role_home()
     return render_template("register.html", form=form)
 
 
@@ -177,7 +208,12 @@ def forgot_password():
     if lookup_form.validate_on_submit():
         user = _find_user_by_login(lookup_form.login.data)
         if not user:
-            flash("No account found with that username or email.", "danger")
+            flash(
+                "No account found with that username or email. "
+                "On the live demo, new accounts are cleared when the free server restarts — "
+                "register again, or log in with patient / patient123.",
+                "danger",
+            )
             return render_template(
                 "forgot_password.html", lookup_form=lookup_form, reset_form=reset_form,
             )
@@ -236,15 +272,17 @@ def register_admin():
         return redirect_to_role_home()
     form = AdminRegisterForm()
     if form.validate_on_submit():
-        if User.query.filter_by(username=form.username.data).first():
+        username = _normalize_username(form.username.data)
+        email = _normalize_email(form.email.data)
+        if _username_taken(username):
             flash("Username already exists.", "danger")
-        elif User.query.filter_by(email=form.email.data).first():
+        elif _email_taken(email):
             flash("Email already registered.", "danger")
         else:
             user = User(
-                username=form.username.data,
-                email=form.email.data,
-                full_name=form.full_name.data,
+                username=username,
+                email=email,
+                full_name=form.full_name.data.strip(),
                 role="admin",
                 is_active=True,
             )
@@ -252,8 +290,12 @@ def register_admin():
             db.session.add(user)
             db.session.commit()
             log_audit("register", "user", f"username={user.username}, role=admin")
-            flash("Admin registration successful. Please log in.", "success")
-            return redirect(url_for("auth.login_admin"))
+            login_user(user)
+            flash(
+                f"Admin registration successful. You are signed in as {user.username}.",
+                "success",
+            )
+            return redirect_to_role_home()
     return render_template("admin_register.html", form=form)
 
 

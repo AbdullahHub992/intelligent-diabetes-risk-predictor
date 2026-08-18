@@ -58,6 +58,14 @@ def create_app(config_class=Config):
     app.register_blueprint(provider_bp, url_prefix="/provider")
 
     @app.context_processor
+    def inject_live_demo_flags():
+        return {
+            "live_ephemeral_db": (
+                os.environ.get("RENDER") == "true" and not os.environ.get("DATABASE_URL")
+            ),
+        }
+
+    @app.context_processor
     def inject_app_name():
         from config import (
             APP_NAME, PROJECT_COURSE, PROJECT_GROUP_ID,
