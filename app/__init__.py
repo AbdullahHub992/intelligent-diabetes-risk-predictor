@@ -116,6 +116,8 @@ def create_app(config_class=Config):
         db.create_all()
         _migrate_schema()
         _seed_defaults(app)
+        from app.account_backup import restore_from_backup
+        restore_from_backup(app)
         _ensure_plots_exist(app)
         from app.ml.predictor import clear_model_cache
         clear_model_cache()

