@@ -136,6 +136,13 @@ main {
 
 .navbar-brand {
     font-size: 1.1rem;
+    max-width: min(42vw, 280px);
+}
+
+.navbar .btn[href*="logout"] {
+    flex-shrink: 0;
+    white-space: nowrap;
+    z-index: 2;
 }
 
 .table th {
