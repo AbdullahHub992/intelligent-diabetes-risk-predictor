@@ -91,4 +91,52 @@
         </div>
     </div>
 </div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Registered Patients</span>
+                <a href="{{ url_for('admin.manage_assignments') }}" class="btn btn-sm btn-success">Assign to Provider</a>
+            </div>
+            {% if patients %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Status</th></tr></thead>
+                    <tbody>
+                    {% for p in patients %}
+                    <tr>
+                        <td>{{ p.full_name }}</td>
+                        <td>@{{ p.username }}</td>
+                        <td>{{ p.email }}</td>
+                        <td>{% if p.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-danger">Inactive</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body text-muted">No patients registered yet.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header">Healthcare Providers</div>
+            {% if providers %}
+            <ul class="list-group list-group-flush">
+                {% for d in providers %}
+                <li class="list-group-item">
+                    <strong>{{ d.full_name }}</strong>
+                    <div class="small text-muted">@{{ d.username }} · {{ d.email }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="card-body text-muted">No healthcare providers yet.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% include 'includes/live_demo_notice.html' %}
 {% endblock %}

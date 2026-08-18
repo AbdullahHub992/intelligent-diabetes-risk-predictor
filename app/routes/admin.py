@@ -51,6 +51,8 @@ def admin_dashboard():
         unread_feedback=get_unread_admin_feedback_count(),
         jobs=jobs,
         production_model=get_production_model_name(),
+        patients=User.query.filter_by(role="patient").order_by(User.created_at.desc()).all(),
+        providers=User.query.filter_by(role="provider").order_by(User.created_at.desc()).all(),
     )
 
 
@@ -380,12 +382,18 @@ def reset_user_password(user_id):
 @login_required
 @role_required("admin")
 def manage_assignments():
-    providers = User.query.filter_by(role="provider", is_active=True).all()
-    patients = User.query.filter_by(role="patient", is_active=True).all()
+    providers = User.query.filter_by(role="provider").order_by(User.full_name.asc()).all()
+    patients = User.query.filter_by(role="patient").order_by(User.created_at.desc()).all()
     assignments = ProviderPatient.query.all()
     form = AssignDoctorPatientForm()
-    form.provider_id.choices = [(p.id, f"{p.full_name} (@{p.username})") for p in providers]
-    form.patient_id.choices = [(p.id, f"{p.full_name} (@{p.username})") for p in patients]
+    form.provider_id.choices = [
+        (p.id, f"{p.full_name} (@{p.username})" + ("" if p.is_active else " [inactive]"))
+        for p in providers
+    ]
+    form.patient_id.choices = [
+        (p.id, f"{p.full_name} (@{p.username})" + ("" if p.is_active else " [inactive]"))
+        for p in patients
+    ]
 
     if form.validate_on_submit():
         provider_id = form.provider_id.data
