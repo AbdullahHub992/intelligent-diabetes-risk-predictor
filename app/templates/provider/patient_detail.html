@@ -8,7 +8,7 @@
 </div>
 <div class="card shadow-sm mb-4">
     <div class="card-header">Health Trend</div>
-    <div class="card-body"><canvas id="patientChart" height="90"></canvas></div>
+    <div class="card-body chart-wrap"><canvas id="patientChart"></canvas></div>
 </div>
 <div class="row g-4">
     <div class="col-md-6">
@@ -35,21 +35,27 @@
                     <td>{{ p.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>{{ p.risk_level }}</td>
                     <td>{{ '%.0f'|format(p.probability * 100) }}%</td>
-                    <td><a href="{{ url_for('provider.clinical_support', prediction_id=p.id) }}" class="btn btn-sm btn-outline-primary">CDS</a></td>
+                    <td><a href="{{ url_for('provider.clinical_support', prediction_id=p.id) }}" class="btn btn-sm btn-primary">Add Clinical Note</a></td>
                 </tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
         <div class="card shadow-sm mt-3">
-            <div class="card-header">Clinical Notes</div>
-            <ul class="list-group list-group-flush">
+            <div class="card-header fw-semibold">Add Clinical Note</div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    {{ form.note.label(class="form-label") }}
+                    {{ form.note(class="form-control mb-3", rows=4, placeholder="Write your clinical remark for this patient") }}
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
                 {% for n in notes %}
-                <li class="list-group-item small"><strong>{{ n.created_at.strftime('%Y-%m-%d') }}</strong>: {{ n.note }}</li>
+                <div class="border-top mt-3 pt-2 small"><strong>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</strong>: {{ n.note }}</div>
                 {% else %}
-                <li class="list-group-item text-muted">No notes yet.</li>
+                <p class="text-muted small mt-3 mb-0">No notes yet.</p>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
     </div>
 </div>
@@ -65,7 +71,8 @@ new Chart(document.getElementById('patientChart'), {
             { label: 'Glucose', data: d.glucose, borderColor: '#dc2626', tension: 0.3 },
             { label: 'Risk %', data: d.risk, borderColor: '#059669', tension: 0.3 }
         ]
-    }
+    },
+    options: { responsive: true, maintainAspectRatio: false }
 });
 </script>
 {% endblock %}

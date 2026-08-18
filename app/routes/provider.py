@@ -54,7 +54,7 @@ def provider_dashboard():
     )
 
 
-@provider_bp.route("/patient/<int:patient_id>")
+@provider_bp.route("/patient/<int:patient_id>", methods=["GET", "POST"])
 @login_required
 @role_required("provider", "admin")
 def patient_detail(patient_id):
@@ -65,6 +65,23 @@ def patient_detail(patient_id):
     if not provider_can_access_patient(current_user.id, patient_id, current_user.is_admin):
         flash("You are not assigned to this patient.", "danger")
         return redirect(url_for("provider.provider_dashboard"))
+
+    form = ClinicalNoteForm()
+    if form.validate_on_submit():
+        latest_pred = (
+            Prediction.query.filter_by(user_id=patient.id)
+            .order_by(Prediction.created_at.desc()).first()
+        )
+        db.session.add(ClinicalNote(
+            provider_id=current_user.id,
+            patient_id=patient.id,
+            prediction_id=latest_pred.id if latest_pred else None,
+            note=form.note.data,
+        ))
+        db.session.commit()
+        log_audit("clinical_note", "patient", f"patient_id={patient.id}")
+        flash("Clinical note saved.", "success")
+        return redirect(url_for("provider.patient_detail", patient_id=patient.id))
 
     records = HealthRecord.query.filter_by(user_id=patient.id).order_by(HealthRecord.recorded_at.asc()).all()
     predictions = (
@@ -82,7 +99,7 @@ def patient_detail(patient_id):
     return render_template(
         "provider/patient_detail.html",
         patient=patient, records=records, predictions=list(reversed(predictions)),
-        chart_data=chart_data, notes=notes, pred_by_record=pred_by_record,
+        chart_data=chart_data, notes=notes, pred_by_record=pred_by_record, form=form,
     )
 
 

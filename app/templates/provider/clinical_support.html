@@ -39,13 +39,13 @@
             <div class="card-body">{% include 'includes/recommendation_panel.html' %}</div>
         </div>
         <div class="card shadow-sm">
-            <div class="card-header">Add Clinical Note</div>
+            <div class="card-header fw-semibold">Add Clinical Note</div>
             <div class="card-body">
                 <form method="POST">
                     {{ form.hidden_tag() }}
-                    <input type="hidden" name="form_type" value="note">
-                    {{ form.note(class="form-control mb-2", rows=3) }}
-                    {{ form.submit(class="btn btn-outline-secondary btn-sm") }}
+                    {{ form.note.label(class="form-label") }}
+                    {{ form.note(class="form-control mb-3", rows=4, placeholder="Write your clinical remark for this patient") }}
+                    {{ form.submit(class="btn btn-primary") }}
                 </form>
                 {% for n in notes %}
                 <div class="border-top mt-2 pt-2 small"><strong>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</strong>: {{ n.note }}</div>

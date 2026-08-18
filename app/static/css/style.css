@@ -157,6 +157,12 @@ main {
     margin-top: 0.35rem;
 }
 
+.chart-wrap {
+    position: relative;
+    height: 220px;
+    overflow: hidden;
+}
+
 .avg-badge {
     display: inline-block;
     font-size: 0.75rem;

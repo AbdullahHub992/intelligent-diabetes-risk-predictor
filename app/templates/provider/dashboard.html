@@ -29,7 +29,7 @@
     <div class="col-md-7">
         <div class="card shadow-sm mb-3">
             <div class="card-header">Risk Trend (Assigned Patients)</div>
-            <div class="card-body"><canvas id="providerChart" height="100"></canvas></div>
+            <div class="card-body chart-wrap"><canvas id="providerChart"></canvas></div>
         </div>
         <div class="card shadow-sm">
             <div class="card-header">Recent Predictions</div>
@@ -42,7 +42,7 @@
                     <td><span class="badge bg-{% if p.risk_level == 'High' %}danger{% elif p.risk_level == 'Moderate' %}warning text-dark{% else %}success{% endif %}">{{ p.risk_level }}</span></td>
                     <td>{{ '%.0f'|format(p.probability * 100) }}%</td>
                     <td>{{ p.created_at.strftime('%Y-%m-%d') }}</td>
-                    <td><a href="{{ url_for('provider.clinical_support', prediction_id=p.id) }}" class="btn btn-sm btn-outline-primary">Analyze</a></td>
+                    <td><a href="{{ url_for('provider.clinical_support', prediction_id=p.id) }}" class="btn btn-sm btn-primary">Add Clinical Note</a></td>
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -59,7 +59,7 @@ new Chart(document.getElementById('providerChart'), {
         labels: {{ risk_trend | map(attribute='date') | list | tojson }},
         datasets: [{ label: 'Risk %', data: {{ risk_trend | map(attribute='probability') | list | tojson }}, borderColor: '#dc2626', tension: 0.3 }]
     },
-    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
 });
 </script>
 {% endblock %}
