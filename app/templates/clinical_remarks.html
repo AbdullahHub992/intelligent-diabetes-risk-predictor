@@ -1,0 +1,14 @@
+﻿{% extends "base.html" %}
+{% block title %}Clinical Remarks{% endblock %}
+{% block content %}
+<h2 class="mb-2">Clinical Remarks from Your Healthcare Provider</h2>
+<p class="text-muted mb-4">Clinical support by the Healthcare Provider to you (the Patient). These remarks support clinical judgment and do not replace a medical diagnosis.</p>
+<div class="alert alert-info">Supports clinical judgment — does not replace professional medical diagnosis.</div>
+<div class="card shadow-sm">
+    <div class="card-header fw-semibold">Remarks sent to you</div>
+    <div class="card-body">
+        {% set notes = notes %}
+        {% include 'includes/clinical_remarks_list.html' %}
+    </div>
+</div>
+{% endblock %}

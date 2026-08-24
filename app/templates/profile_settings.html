@@ -1,12 +1,11 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}My Profile{% endblock %}
 {% block content %}
-{% include 'includes/srs_page_header.html' %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h3 class="mb-2">User Profile Management (FR-05)</h3>
+                <h3 class="mb-2">User Profile Management</h3>
                 <p class="text-muted mb-4">
                     View and update profile details, contact information, baseline physical metrics, and password.
                     Role: <strong>{{ current_user.role | replace('provider', 'Healthcare Provider') | title }}</strong>.
@@ -41,7 +40,7 @@
                     {{ form.submit(class="btn btn-primary btn-lg") }}
                 </form>
                 <hr>
-                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-secondary">Change Password (UC_06)</a>
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-secondary">Change Password</a>
             </div>
         </div>
     </div>

@@ -1,0 +1,16 @@
+{% if notes %}
+{% for n in notes %}
+<div class="border rounded p-3 mb-3">
+    <div class="d-flex flex-wrap justify-content-between gap-2 small text-muted mb-2">
+        <span>From: <strong class="text-dark">{{ n.provider.full_name if n.provider else 'Healthcare Provider' }}</strong></span>
+        <span>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    </div>
+    <p class="mb-2">{{ n.note }}</p>
+    {% if n.prediction_id and show_prediction_link|default(true) %}
+    <a class="small" href="{{ url_for('main.prediction_detail', prediction_id=n.prediction_id) }}">Related prediction</a>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p class="text-muted mb-0">No clinical remarks yet. When your assigned healthcare provider sends a remark, it will appear here.</p>
+{% endif %}

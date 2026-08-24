@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Home - {{ app_name }}{% endblock %}
 {% block content %}
 <div class="home-page">
@@ -28,7 +28,7 @@
                         dashboards, report export, education, clinical decision support, and feedback.
                     </p>
                     <a href="{{ url_for('auth.user_login') }}" class="btn btn-primary btn-lg w-100">User Login</a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-link mt-2">User Registration (UC_01)</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-link mt-2">User Registration</a>
                 </div>
             </div>
         </div>
@@ -42,7 +42,7 @@
                         user management, and system monitoring.
                     </p>
                     <a href="{{ url_for('auth.login_admin') }}" class="btn btn-dark btn-lg w-100">Admin Login</a>
-                    <a href="{{ url_for('auth.register_admin') }}" class="btn btn-link mt-2">Admin Registration (UC_08)</a>
+                    <a href="{{ url_for('auth.register_admin') }}" class="btn btn-link mt-2">Admin Registration</a>
                 </div>
             </div>
         </div>
@@ -59,7 +59,7 @@
                     <li>Health data input &amp; diabetes risk prediction with confidence scores</li>
                     <li>Risk factor analysis, personalized recommendations &amp; longitudinal tracking</li>
                     <li>Interactive dashboard, PDF/CSV report export &amp; education resources</li>
-                    <li>Clinical decision support &amp; feedback submission</li>
+                    <li>Clinical remarks from provider to patient &amp; feedback submission</li>
                 </ul>
             </div>
         </div>
@@ -79,8 +79,6 @@
         </div>
     </div>
 </div>
-
-{% include 'includes/srs_requirements_section.html' %}
 
 <div class="row g-4 home-section pb-2">
     <div class="col-md-4">

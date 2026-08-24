@@ -27,6 +27,9 @@
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.my_health_records') }}">Prediction History</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.progress') }}">Longitudinal Tracking</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('main.education') }}">Education</a></li>
+                    {% if current_user.is_patient %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clinical_remarks') }}">Clinical Remarks</a></li>
+                    {% endif %}
                     {% if current_user.is_provider %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('provider.provider_dashboard') }}">Clinical</a></li>
                     {% endif %}
@@ -98,7 +101,6 @@
     <footer class="text-center text-muted py-3 border-top">
         <small>{{ app_name }} — {{ project_course }} · SRS v{{ project_version }} · Group {{ project_group_id }}</small>
         <small class="d-block">Decision support only, not medical advice. Predictions in near real-time (2–3s).</small>
-        <small class="d-block"><a href="{{ url_for('main.index') }}#srs-requirements" class="text-muted">View SRS Functional Requirements (FR-01–FR-20)</a></small>
         {% if current_user.is_authenticated and current_user.is_admin %}
         <small class="d-block mt-1 text-dark fw-semibold">Signed in as Administrator — {{ current_user.full_name }}</small>
         {% endif %}

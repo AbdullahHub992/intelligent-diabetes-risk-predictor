@@ -1,8 +1,7 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}EDA{% endblock %}
 {% block content %}
-{% include 'includes/srs_page_header.html' %}
-<h2 class="mb-4">Perform EDA &amp; Preprocessing (FR-17)</h2>
+<h2 class="mb-4">Perform EDA &amp; Preprocessing</h2>
 {% if active_dataset %}
 <p>Dataset: <strong>{{ active_dataset.filename }}</strong> ({{ active_dataset.rows }} rows)
 <a href="{{ url_for('admin.export_eda_pdf') }}" class="btn btn-sm btn-outline-danger ms-2">Export EDA PDF</a></p>

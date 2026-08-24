@@ -67,14 +67,14 @@ def test_user_login_and_profile():
     assert b"Save Profile" in profile.data
 
 
-def test_home_page_lists_srs_requirements():
+def test_home_page_lists_panels_without_fr_labels():
     app = create_app()
     client = app.test_client()
     home = client.get("/")
     assert home.status_code == 200
     body = home.data
-    assert b"FR-01" in body
-    assert b"FR-20" in body
+    assert b"FR-01" not in body
+    assert b"FR-20" not in body
     assert b"Owner Access Code" not in body
     assert b"security question" not in body.lower()
     assert b"User Panel" in body

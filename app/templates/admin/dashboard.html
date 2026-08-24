@@ -1,7 +1,6 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
-{% include 'includes/srs_page_header.html' %}
 <h2 class="mb-2">Admin Panel</h2>
 <p class="text-muted mb-4">Dataset ingestion, EDA, model training, account management, and system monitoring.</p>
 
@@ -15,17 +14,17 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-4">
         <div class="card shadow-sm h-100 admin-action-card">
-            <div class="card-header bg-white fw-semibold">Account Management (FR-20)</div>
+            <div class="card-header bg-white fw-semibold">Account Management</div>
             <div class="card-body d-grid gap-2">
                 <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-primary text-start">Manage Users</a>
                 <a href="{{ url_for('admin.create_user') }}" class="btn btn-outline-primary text-start">Create User</a>
-                <a href="{{ url_for('admin.manage_assignments') }}" class="btn btn-outline-primary text-start">Assign Patient to Provider (FR-13)</a>
+                <a href="{{ url_for('admin.manage_assignments') }}" class="btn btn-outline-primary text-start">Assign Patient to Provider</a>
             </div>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="card shadow-sm h-100 admin-action-card">
-            <div class="card-header bg-white fw-semibold">Machine Learning (FR-16 to FR-19)</div>
+            <div class="card-header bg-white fw-semibold">Machine Learning</div>
             <div class="card-body d-grid gap-2">
                 <a href="{{ url_for('admin.upload_dataset') }}" class="btn btn-primary text-start">Import Dataset</a>
                 <a href="{{ url_for('admin.eda') }}" class="btn btn-outline-primary text-start">Perform EDA &amp; Preprocessing</a>
@@ -39,9 +38,9 @@
         <div class="card shadow-sm h-100 admin-action-card">
             <div class="card-header bg-white fw-semibold">Education &amp; Feedback</div>
             <div class="card-body d-grid gap-2">
-                <a href="{{ url_for('admin.manage_education') }}" class="btn btn-outline-info text-start">Manage Education (FR-12)</a>
+                <a href="{{ url_for('admin.manage_education') }}" class="btn btn-outline-info text-start">Manage Education</a>
                 <a href="{{ url_for('admin.view_feedback') }}" class="btn btn-outline-warning text-start">
-                    Feedback for Retraining (FR-14 / FR-19)
+                    Feedback for Retraining
                     {% if pending_feedback %}
                     <span class="badge bg-dark ms-1">{{ pending_feedback }}</span>
                     {% endif %}

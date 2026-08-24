@@ -47,7 +47,8 @@
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     {{ form.note.label(class="form-label") }}
-                    {{ form.note(class="form-control mb-3", rows=4, placeholder="Write your clinical remark for this patient") }}
+                    <p class="small text-muted">This remark is sent to the patient and shown on their Clinical Remarks page.</p>
+                    {{ form.note(class="form-control mb-3", rows=4, placeholder="Write a clinical remark for this patient") }}
                     {{ form.submit(class="btn btn-primary") }}
                 </form>
                 {% for n in notes %}

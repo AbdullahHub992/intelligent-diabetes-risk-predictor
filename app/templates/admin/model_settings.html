@@ -1,8 +1,7 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Model Settings{% endblock %}
 {% block content %}
-{% include 'includes/srs_page_header.html' %}
-<h2 class="mb-4">Production Model Selection (FR-19)</h2>
+<h2 class="mb-4">Production Model Selection</h2>
 <p>Override auto-selected best model for live predictions. Current: <strong>{{ current or 'Auto (Best F1)' }}</strong></p>
 <div class="col-md-5">
     <form method="POST">

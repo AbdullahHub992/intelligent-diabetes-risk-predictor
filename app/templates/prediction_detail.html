@@ -1,9 +1,8 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Risk Factor Analysis{% endblock %}
 {% block content %}
-{% include 'includes/srs_page_header.html' %}
 <h2 class="mb-2">Risk Factor Analysis &amp; Explanation</h2>
-<p class="text-muted mb-4">Interpretable explanation of key features contributing to your prediction (UC_03: Explain Result).</p>
+<p class="text-muted mb-4">Interpretable explanation of key features contributing to your prediction.</p>
 <div class="row g-4">
     <div class="col-md-5">
         <div class="card shadow-sm">
@@ -52,6 +51,17 @@
             <div class="card-header fw-bold">Personalized Recommendation System</div>
             <div class="card-body">{% include 'includes/recommendation_panel.html' %}</div>
         </div>
+        {% if current_user.is_patient %}
+        <div class="card shadow-sm mt-3">
+            <div class="card-header fw-semibold">Clinical Remarks from Your Provider</div>
+            <div class="card-body">
+                {% set notes = clinical_remarks %}
+                {% set show_prediction_link = false %}
+                {% include 'includes/clinical_remarks_list.html' %}
+                <a class="btn btn-sm btn-outline-primary mt-2" href="{{ url_for('main.clinical_remarks') }}">All clinical remarks</a>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

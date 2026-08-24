@@ -1,8 +1,7 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Clinical Support{% endblock %}
 {% block content %}
-{% include 'includes/srs_page_header.html' %}
-<h2 class="mb-4">Clinical Decision Support (FR-13)</h2>
+<h2 class="mb-4">Clinical Decision Support</h2>
 <div class="alert alert-info">Supports clinical judgment — does not replace professional medical diagnosis.</div>
 <div class="row g-4">
     <div class="col-md-4">
@@ -44,7 +43,8 @@
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     {{ form.note.label(class="form-label") }}
-                    {{ form.note(class="form-control mb-3", rows=4, placeholder="Write your clinical remark for this patient") }}
+                    <p class="small text-muted">This remark is sent to the patient and shown on their Clinical Remarks page.</p>
+                    {{ form.note(class="form-control mb-3", rows=4, placeholder="Write a clinical remark for this patient") }}
                     {{ form.submit(class="btn btn-primary") }}
                 </form>
                 {% for n in notes %}
