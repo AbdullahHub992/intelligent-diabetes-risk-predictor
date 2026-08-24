@@ -80,7 +80,7 @@ def patient_detail(patient_id):
         ))
         db.session.commit()
         log_audit("clinical_note", "patient", f"patient_id={patient.id}")
-        flash("Clinical note saved.", "success")
+        flash("Clinical remark sent. The patient can now see it on Clinical Remarks.", "success")
         return redirect(url_for("provider.patient_detail", patient_id=patient.id))
 
     records = HealthRecord.query.filter_by(user_id=patient.id).order_by(HealthRecord.recorded_at.asc()).all()
@@ -127,7 +127,7 @@ def clinical_support(prediction_id):
         db.session.add(note)
         db.session.commit()
         log_audit("clinical_note", "patient", f"patient_id={patient.id}")
-        flash("Clinical note saved.", "success")
+        flash("Clinical remark sent. The patient can now see it on Clinical Remarks.", "success")
         return redirect(url_for("provider.clinical_support", prediction_id=prediction_id))
 
     notes = ClinicalNote.query.filter_by(prediction_id=prediction.id).order_by(ClinicalNote.created_at.desc()).all()

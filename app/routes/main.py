@@ -10,7 +10,7 @@ from app.forms import ExportReportForm, FeedbackForm, HealthDataForm
 from app.ml.predictor import predict_health_record, resolve_model_name
 from app.ml.recommendations import parse_stored_recommendations
 from app.ml.reports import generate_csv_report, generate_pdf_report
-from app.models import EducationResource, Feedback, HealthRecord, ModelMetrics, Prediction, ProviderPatient
+from app.models import ClinicalNote, EducationResource, Feedback, HealthRecord, ModelMetrics, Prediction, ProviderPatient
 from app.utils import log_audit, redirect_to_role_home
 
 main_bp = Blueprint("main", __name__)
@@ -116,10 +116,19 @@ def dashboard():
     if len(predictions) >= 2 and predictions[0].probability > predictions[1].probability:
         alert = "Your diabetes risk has increased since your last assessment. Consider consulting your healthcare provider."
     latest_rec = parse_stored_recommendations(predictions[0]) if predictions else None
+    clinical_remarks = []
+    if current_user.is_patient:
+        clinical_remarks = (
+            ClinicalNote.query.filter_by(patient_id=current_user.id)
+            .order_by(ClinicalNote.created_at.desc())
+            .limit(5)
+            .all()
+        )
     return render_template(
         "dashboard.html", records=records, predictions=predictions,
         metrics=metrics, trend_data=trend_data, alert=alert,
         recommendation_plan=latest_rec,
+        clinical_remarks=clinical_remarks,
     )
 
 
@@ -226,13 +235,31 @@ def prediction_detail(prediction_id):
         return redirect(url_for("main.dashboard"))
     explanation = json.loads(prediction.explanation) if prediction.explanation else []
     record = HealthRecord.query.get(prediction.health_record_id)
+    clinical_remarks = (
+        ClinicalNote.query.filter_by(prediction_id=prediction.id)
+        .order_by(ClinicalNote.created_at.desc())
+        .all()
+    )
     return render_template(
         "prediction_detail.html",
         prediction=prediction,
         explanation=explanation,
         record=record,
         recommendation_plan=parse_stored_recommendations(prediction),
+        clinical_remarks=clinical_remarks,
     )
+
+
+@main_bp.route("/clinical-remarks")
+@login_required
+@role_required("patient")
+def clinical_remarks():
+    notes = (
+        ClinicalNote.query.filter_by(patient_id=current_user.id)
+        .order_by(ClinicalNote.created_at.desc())
+        .all()
+    )
+    return render_template("clinical_remarks.html", notes=notes)
 
 
 @main_bp.route("/education")

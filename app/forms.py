@@ -361,8 +361,11 @@ class EducationForm(FlaskForm):
 
 
 class ClinicalNoteForm(FlaskForm):
-    note = TextAreaField("Clinical Note", validators=[DataRequired(), Length(max=2000)])
-    submit = SubmitField("Save Clinical Note")
+    note = TextAreaField(
+        "Clinical Remark (shown to the patient)",
+        validators=[DataRequired(), Length(max=2000)],
+    )
+    submit = SubmitField("Send Remark to Patient")
 
 
 class AssignDoctorPatientForm(FlaskForm):
