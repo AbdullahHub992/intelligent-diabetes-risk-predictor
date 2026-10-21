@@ -6,6 +6,7 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Length, NumberRange, Optional, URL, ValidationError
 
+import re
 import socket
 
 
@@ -42,12 +43,40 @@ class EmailDomainReachable:
 
 REAL_EMAIL = [DataRequired(), Email(), EmailDomainReachable()]
 
+PASSWORD_RULE = (
+    "Use at least 9 characters, including 1 uppercase letter, 1 number, and 1 special character."
+)
+
+
+class StrongPassword:
+    """Require length, an uppercase letter, a digit, and a special character."""
+
+    def __init__(self, message=None):
+        self.message = message or PASSWORD_RULE
+
+    def __call__(self, form, field):
+        value = field.data or ""
+        if (
+            len(value) < 9
+            or not re.search(r"[A-Z]", value)
+            or not re.search(r"\d", value)
+            or not re.search(r"[^A-Za-z0-9]", value)
+        ):
+            raise ValidationError(self.message)
+
+
+STRONG_PASSWORD = [DataRequired(), StrongPassword()]
+
 
 class LoginForm(FlaskForm):
     username = StringField("Username or Email", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     remember = BooleanField("Remember Me")
     submit = SubmitField("Login")
+
+
+class AdminLoginForm(LoginForm):
+    access_code = StringField("Access Code", validators=[DataRequired(message="Enter one of the three admin access codes.")])
 
 
 class ProfileSettingsForm(FlaskForm):
@@ -70,11 +99,11 @@ class ProfileSettingsForm(FlaskForm):
     )
     current_password = PasswordField(
         "Current Password",
-        validators=[Optional(), Length(min=8)],
+        validators=[Optional()],
     )
     new_password = PasswordField(
         "New Password",
-        validators=[Optional(), Length(min=8)],
+        validators=[Optional(), StrongPassword()],
     )
     confirm_password = PasswordField(
         "Confirm New Password",
@@ -85,7 +114,7 @@ class ProfileSettingsForm(FlaskForm):
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField("Current Password", validators=[DataRequired()])
-    new_password = PasswordField("New Password", validators=[DataRequired(), Length(min=8)])
+    new_password = PasswordField("New Password", validators=STRONG_PASSWORD)
     confirm_password = PasswordField(
         "Confirm New Password",
         validators=[DataRequired(), EqualTo("new_password", message="Passwords must match")],
@@ -114,7 +143,7 @@ class RegisterForm(FlaskForm):
         "Professional Credentials (for healthcare providers)",
         validators=[Optional(), Length(max=200)],
     )
-    password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
+    password = PasswordField("Password", validators=STRONG_PASSWORD)
     confirm_password = PasswordField(
         "Confirm Password",
         validators=[DataRequired(), EqualTo("password", message="Passwords must match")],
@@ -128,7 +157,7 @@ class ForgotPasswordLookupForm(FlaskForm):
 
 
 class ForgotPasswordForm(FlaskForm):
-    new_password = PasswordField("New Password", validators=[DataRequired(), Length(min=8)])
+    new_password = PasswordField("New Password", validators=STRONG_PASSWORD)
     confirm_password = PasswordField(
         "Confirm New Password",
         validators=[DataRequired(), EqualTo("new_password", message="Passwords must match")],
@@ -141,6 +170,22 @@ class ForgotPasswordEmailForm(FlaskForm):
     submit = SubmitField("Send Reset Link")
 
 
+class AdminAccessCode:
+    """Accept any one of the three fixed admin access codes."""
+
+    def __init__(self, message=None):
+        self.message = message or "Enter one of the three admin access codes."
+
+    def __call__(self, form, field):
+        from flask import current_app
+
+        entered = (field.data or "").strip().casefold()
+        allowed = current_app.config.get("ADMIN_ACCESS_CODES") or ()
+        valid = {str(code).strip().casefold() for code in allowed}
+        if entered not in valid:
+            raise ValidationError(self.message)
+
+
 class AdminRegisterForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField("Email", validators=REAL_EMAIL)
@@ -149,12 +194,24 @@ class AdminRegisterForm(FlaskForm):
         validators=[DataRequired(), EqualTo("email", message="Email addresses must match")],
     )
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
-    password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
+    access_code = StringField("Access Code", validators=[DataRequired(), AdminAccessCode()])
+    password = PasswordField("Password", validators=STRONG_PASSWORD)
     confirm_password = PasswordField(
         "Confirm Password",
         validators=[DataRequired(), EqualTo("password", message="Passwords must match")],
     )
     submit = SubmitField("Register Admin")
+
+
+class RegistrationOtpForm(FlaskForm):
+    otp = StringField(
+        "Verification code",
+        validators=[
+            DataRequired(),
+            Length(min=6, max=6, message="Enter the 6-digit code from your email."),
+        ],
+    )
+    submit = SubmitField("Verify and create account")
 
 
 class CreateUserForm(FlaskForm):
@@ -340,7 +397,7 @@ class UserEditForm(FlaskForm):
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField("New Password", validators=[DataRequired(), Length(min=8)])
+    password = PasswordField("New Password", validators=STRONG_PASSWORD)
     confirm_password = PasswordField("Confirm Password", validators=[
         DataRequired(), EqualTo("password", message="Passwords must match"),
     ])

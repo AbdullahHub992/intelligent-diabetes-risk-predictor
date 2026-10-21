@@ -183,48 +183,42 @@ def _ensure_plots_exist(app):
             pass
 
 
+def _remove_seeded_account(username, email):
+    """Drop a built-in demo login so it cannot sign in and is not recreated."""
+    from app.models import (
+        AuditLog, ClinicalNote, Dataset, Feedback, HealthRecord, PasswordResetToken,
+        Prediction, ProviderPatient, User,
+    )
+
+    user = User.query.filter_by(username=username, email=email).first()
+    if not user:
+        return
+
+    Feedback.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    ClinicalNote.query.filter(
+        (ClinicalNote.patient_id == user.id) | (ClinicalNote.provider_id == user.id)
+    ).delete(synchronize_session=False)
+    ProviderPatient.query.filter(
+        (ProviderPatient.patient_id == user.id) | (ProviderPatient.provider_id == user.id)
+    ).delete(synchronize_session=False)
+    Prediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    HealthRecord.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    PasswordResetToken.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    AuditLog.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    Dataset.query.filter_by(uploaded_by=user.id).update({Dataset.uploaded_by: None}, synchronize_session=False)
+    db.session.delete(user)
+    db.session.flush()
+
+
 def _seed_defaults(app):
-    from app.models import EducationResource, ProviderPatient, User
-    from werkzeug.security import generate_password_hash
+    from app.models import EducationResource
 
-    if not User.query.filter_by(username="admin").first():
-        admin = User(
-            username="admin", email="admin@diabetes.local",
-            full_name="System Administrator", role="admin",
-            password_hash=generate_password_hash("admin123"), is_active=True,
-            security_question="city",
-        )
-        admin.set_security_answer("admin")
-        db.session.add(admin)
-
-    provider = User.query.filter_by(username="doctor").first()
-    if not provider:
-        provider = User(
-            username="doctor", email="doctor@diabetes.local",
-            full_name="Dr. Healthcare Provider", role="provider",
-            password_hash=generate_password_hash("doctor123"), is_active=True,
-            professional_credentials="MD-12345",
-            security_question="city",
-        )
-        provider.set_security_answer("doctor")
-        db.session.add(provider)
-        db.session.flush()
-
-    patient = User.query.filter_by(username="patient").first()
-    if not patient:
-        patient = User(
-            username="patient", email="patient@diabetes.local",
-            full_name="Sample Patient", role="patient",
-            password_hash=generate_password_hash("patient123"), is_active=True,
-            security_question="pet",
-        )
-        patient.set_security_answer("patient")
-        db.session.add(patient)
-        db.session.flush()
-
-    if provider and patient:
-        if not ProviderPatient.query.filter_by(provider_id=provider.id, patient_id=patient.id).first():
-            db.session.add(ProviderPatient(provider_id=provider.id, patient_id=patient.id))
+    for username, email in (
+        ("admin", "admin@diabetes.local"),
+        ("doctor", "doctor@diabetes.local"),
+        ("patient", "patient@diabetes.local"),
+    ):
+        _remove_seeded_account(username, email)
 
     if EducationResource.query.count() == 0:
         resources = [
@@ -270,15 +264,5 @@ def _seed_defaults(app):
             "doctor",
             os.environ.get("OWNER_DOCTOR_ACCESS_CODE", "doctor2026"),
         )
-
-    for username, question, answer in [
-        ("admin", "city", "admin"),
-        ("doctor", "city", "doctor"),
-        ("patient", "pet", "patient"),
-    ]:
-        u = User.query.filter_by(username=username).first()
-        if u and not u.security_answer_hash:
-            u.security_question = question
-            u.set_security_answer(answer)
 
     db.session.commit()

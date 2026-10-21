@@ -3,6 +3,25 @@ import os
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
+def _load_dotenv():
+    path = os.path.join(BASE_DIR, ".env")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip().lstrip("\ufeff")
+            value = value.strip().strip('"').strip("'")
+            if key and not os.environ.get(key):
+                os.environ[key] = value
+
+
+_load_dotenv()
+
+
 def _database_uri():
     url = os.environ.get("DATABASE_URL")
     if url:
@@ -40,3 +59,12 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = os.environ.get("RENDER") == "true"
     WTF_CSRF_ENABLED = True
+    MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() in ("1", "true", "yes")
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "").replace(" ", "")
+    MAIL_FROM = os.environ.get("MAIL_FROM") or os.environ.get("MAIL_USERNAME", "")
+    OTP_EXPIRE_MINUTES = 10
+    # Any one of these codes is accepted on each admin login.
+    ADMIN_ACCESS_CODES = ("IDRP-ADMIN-01", "IDRP-ADMIN-02", "IDRP-ADMIN-03")

@@ -1,11 +1,16 @@
-from flask import Blueprint, abort, flash, redirect, render_template, session, url_for
+import secrets
+from datetime import datetime, timedelta
+
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
+from app.emailer import MailNotConfigured, send_password_reset_otp, send_registration_otp
 from app.forms import (
-    AdminRegisterForm, ChangePasswordForm,
+    AdminLoginForm, AdminRegisterForm, ChangePasswordForm,
     ForgotPasswordForm, ForgotPasswordLookupForm, LoginForm, ProfileSettingsForm,
-    RegisterForm, ResetPasswordForm,
+    RegisterForm, RegistrationOtpForm, ResetPasswordForm,
 )
 from app.models import PasswordResetToken, User
 from app.security import clear_login_attempts, is_login_rate_limited, record_failed_login
@@ -19,14 +24,14 @@ LOGIN_PORTALS = {
         "title": "User Login",
         "subtitle": "Patients and healthcare providers — predictions, dashboards, reports, education, and clinical support.",
         "icon": "user",
-        "demo": "patient / patient123  ·  doctor / doctor123",
+        "demo": None,
     },
     "admin": {
         "roles": ["admin"],
         "title": "Admin Login",
         "subtitle": "System administrator — dataset import, model training, and account management.",
         "icon": "admin",
-        "demo": "admin / admin123",
+        "demo": None,
     },
 }
 
@@ -88,7 +93,7 @@ def _handle_login(portal_key):
     if not portal:
         abort(404)
 
-    form = LoginForm()
+    form = AdminLoginForm() if portal_key == "admin" else LoginForm()
     if form.validate_on_submit():
         username = _normalize_username(form.username.data)
         if is_login_rate_limited(username):
@@ -106,6 +111,11 @@ def _handle_login(portal_key):
                     f"Please use {target} on the home page.",
                     "danger",
                 )
+                return render_template("login.html", form=form, portal=portal, portal_key=portal_key)
+
+            if portal_key == "admin" and not _admin_access_code_ok(form.access_code.data):
+                record_failed_login(username)
+                flash("That access code is not valid. Enter one of the three admin access codes.", "danger")
                 return render_template("login.html", form=form, portal=portal, portal_key=portal_key)
 
             login_user(user, remember=form.remember.data)
@@ -150,6 +160,62 @@ def login_admin():
     return _handle_login("admin")
 
 
+ROLE_EMAIL_LABELS = {
+    "patient": "patient",
+    "provider": "healthcare provider",
+    "admin": "administrator",
+}
+
+
+def _mask_email(email):
+    local, _, domain = (email or "").partition("@")
+    if not local or not domain:
+        return email
+    visible = local[:1]
+    return f"{visible}{'*' * max(len(local) - 1, 1)}@{domain}"
+
+
+def _issue_registration_otp(pending):
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    now = datetime.utcnow()
+    pending["otp_hash"] = generate_password_hash(code)
+    pending["expires_at"] = (now + timedelta(minutes=current_app.config.get("OTP_EXPIRE_MINUTES", 10))).isoformat()
+    pending["last_sent"] = now.isoformat()
+    pending["attempts"] = 0
+    session["pending_registration"] = pending
+    session.modified = True
+    try:
+        send_registration_otp(pending["email"], code, ROLE_EMAIL_LABELS.get(pending["role"], "account"))
+    except Exception:
+        session.pop("pending_registration", None)
+        raise
+    return code
+
+
+def _registration_blocked(username, email, role, credentials):
+    if _username_taken(username):
+        flash("Username already exists.", "danger")
+        return True
+    if _email_taken(email):
+        flash("Email already registered.", "danger")
+        return True
+    if role == "provider" and not (credentials or "").strip():
+        flash("Healthcare providers must provide professional credentials (e.g. license or hospital ID).", "danger")
+        return True
+    return False
+
+
+def _otp_send_failed(exc):
+    if isinstance(exc, MailNotConfigured):
+        flash(
+            "Email verification is not set up yet. Add the sender mailbox in MAIL_USERNAME and MAIL_PASSWORD, then register again.",
+            "danger",
+        )
+        return
+    current_app.logger.exception("registration otp email failed")
+    flash("We could not send the verification email. Check the address and try again.", "danger")
+
+
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
@@ -158,33 +224,141 @@ def register():
     if form.validate_on_submit():
         username = _normalize_username(form.username.data)
         email = _normalize_email(form.email.data)
-        if _username_taken(username):
-            flash("Username already exists.", "danger")
-        elif _email_taken(email):
-            flash("Email already registered.", "danger")
-        elif form.role.data == "provider" and not (form.professional_credentials.data or "").strip():
-            flash("Healthcare providers must provide professional credentials (e.g. license or hospital ID).", "danger")
+        credentials = (form.professional_credentials.data or "").strip() or None
+        if not _registration_blocked(username, email, form.role.data, credentials):
+            try:
+                _issue_registration_otp({
+                    "username": username,
+                    "email": email,
+                    "full_name": form.full_name.data.strip(),
+                    "role": form.role.data,
+                    "professional_credentials": credentials,
+                    "password_hash": generate_password_hash(form.password.data),
+                    "cancel_endpoint": "auth.register",
+                })
+            except Exception as exc:
+                _otp_send_failed(exc)
+            else:
+                flash(f"We sent a 6-digit code to {email}.", "info")
+                return redirect(url_for("auth.verify_registration"))
+    return render_template("register.html", form=form)
+
+
+@auth_bp.route("/register/verify", methods=["GET", "POST"])
+def verify_registration():
+    if current_user.is_authenticated:
+        return redirect_to_role_home()
+
+    pending = session.get("pending_registration")
+    if not pending:
+        flash("Start registration again so we can email you a new code.", "info")
+        return redirect(url_for("auth.register"))
+
+    expires_at = datetime.fromisoformat(pending["expires_at"])
+    if expires_at <= datetime.utcnow():
+        session.pop("pending_registration", None)
+        flash("That code expired. Register again to get a new one.", "danger")
+        return redirect(url_for(pending.get("cancel_endpoint") or "auth.register"))
+
+    form = RegistrationOtpForm()
+    if request_is_resend():
+        last_sent = datetime.fromisoformat(pending["last_sent"])
+        if (datetime.utcnow() - last_sent).total_seconds() < 60:
+            flash("Wait a minute before requesting another code.", "warning")
+        else:
+            try:
+                _issue_registration_otp(pending)
+            except Exception as exc:
+                _otp_send_failed(exc)
+            else:
+                flash(f"A new code was sent to {pending['email']}.", "info")
+        return redirect(url_for("auth.verify_registration"))
+
+    if form.validate_on_submit():
+        if not check_password_hash(pending["otp_hash"], (form.otp.data or "").strip()):
+            pending["attempts"] = int(pending.get("attempts") or 0) + 1
+            if pending["attempts"] >= 5:
+                session.pop("pending_registration", None)
+                flash("Too many incorrect codes. Register again to get a new one.", "danger")
+                return redirect(url_for(pending.get("cancel_endpoint") or "auth.register"))
+            session["pending_registration"] = pending
+            session.modified = True
+            flash("That code is incorrect.", "danger")
+        elif _registration_blocked(
+            pending["username"], pending["email"], pending["role"], pending.get("professional_credentials")
+        ):
+            session.pop("pending_registration", None)
+            return redirect(url_for(pending.get("cancel_endpoint") or "auth.register"))
         else:
             user = User(
-                username=username,
-                email=email,
-                full_name=form.full_name.data.strip(),
-                role=form.role.data,
-                professional_credentials=(form.professional_credentials.data or "").strip() or None,
+                username=pending["username"],
+                email=pending["email"],
+                full_name=pending["full_name"],
+                role=pending["role"],
+                professional_credentials=pending.get("professional_credentials"),
+                password_hash=pending["password_hash"],
                 is_active=True,
             )
-            user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
-            log_audit("register", "user", f"username={user.username}, role={user.role}")
+            session.pop("pending_registration", None)
+            log_audit("register", "user", f"username={user.username}, role={user.role}, email_verified=true")
             login_user(user)
             flash(
-                f"Registration successful. You are signed in as {user.username}. "
-                "Use User Login with this username or email next time.",
+                f"Email verified. You are signed in as {user.username}.",
                 "success",
             )
             return redirect_to_role_home()
-    return render_template("register.html", form=form)
+
+    return render_template(
+        "verify_otp.html",
+        form=form,
+        masked_email=_mask_email(pending["email"]),
+        role_label=ROLE_EMAIL_LABELS.get(pending["role"], "account"),
+        cancel_endpoint=pending.get("cancel_endpoint") or "auth.register",
+    )
+
+
+def _admin_access_code_ok(value):
+    entered = (value or "").strip().casefold()
+    allowed = current_app.config.get("ADMIN_ACCESS_CODES") or ()
+    return bool(entered) and entered in {str(code).strip().casefold() for code in allowed}
+
+
+def request_is_resend():
+    return request.method == "POST" and request.form.get("resend") == "1"
+
+
+def _pending_password_reset():
+    pending = session.get("pending_password_reset")
+    if not pending:
+        return None
+    if datetime.fromisoformat(pending["expires_at"]) <= datetime.utcnow():
+        session.pop("pending_password_reset", None)
+        return None
+    return pending
+
+
+def _issue_password_reset_otp(user):
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    now = datetime.utcnow()
+    pending = {
+        "user_id": user.id,
+        "email": user.email,
+        "otp_hash": generate_password_hash(code),
+        "expires_at": (now + timedelta(minutes=current_app.config.get("OTP_EXPIRE_MINUTES", 10))).isoformat(),
+        "last_sent": now.isoformat(),
+        "attempts": 0,
+        "verified": False,
+    }
+    session["pending_password_reset"] = pending
+    session.modified = True
+    try:
+        send_password_reset_otp(user.email, code)
+    except Exception:
+        session.pop("pending_password_reset", None)
+        raise
+    return code
 
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
@@ -193,38 +367,99 @@ def forgot_password():
         return redirect_to_role_home()
 
     lookup_form = ForgotPasswordLookupForm()
+    otp_form = RegistrationOtpForm()
     reset_form = ForgotPasswordForm()
-    user_id = session.get("recovery_user_id")
-    user = User.query.get(user_id) if user_id else None
+    pending = _pending_password_reset()
 
-    if user and reset_form.validate_on_submit():
-        user.set_password(reset_form.new_password.data)
-        session.pop("recovery_user_id", None)
-        db.session.commit()
-        log_audit("password_recovery", "user", f"username={user.username}")
-        flash("Password reset successful. Please log in.", "success")
-        return _redirect_login_for_role(user.role)
+    if request.method == "POST" and pending and request_is_resend() and not pending.get("verified"):
+        last_sent = datetime.fromisoformat(pending["last_sent"])
+        if (datetime.utcnow() - last_sent).total_seconds() < 60:
+            flash("Wait a minute before requesting another code.", "warning")
+        else:
+            user = db.session.get(User, pending["user_id"])
+            if not user or not user.is_active:
+                session.pop("pending_password_reset", None)
+                flash("Start password recovery again.", "danger")
+                return redirect(url_for("auth.forgot_password"))
+            try:
+                _issue_password_reset_otp(user)
+            except Exception as exc:
+                _otp_send_failed(exc)
+            else:
+                flash(f"A new code was sent to {_mask_email(user.email)}.", "info")
+        return redirect(url_for("auth.forgot_password"))
+
+    if request.method == "POST" and pending and not pending.get("verified") and request.form.get("otp") is not None:
+        if otp_form.validate_on_submit():
+            if not check_password_hash(pending["otp_hash"], (otp_form.otp.data or "").strip()):
+                pending["attempts"] = int(pending.get("attempts") or 0) + 1
+                if pending["attempts"] >= 5:
+                    session.pop("pending_password_reset", None)
+                    flash("Too many incorrect codes. Start password recovery again.", "danger")
+                    return redirect(url_for("auth.forgot_password"))
+                session["pending_password_reset"] = pending
+                session.modified = True
+                flash("That code is incorrect.", "danger")
+            else:
+                pending["verified"] = True
+                session["pending_password_reset"] = pending
+                session.modified = True
+                flash("Code verified. Choose a new password.", "success")
+        return render_template(
+            "forgot_password.html",
+            lookup_form=lookup_form,
+            otp_form=otp_form,
+            reset_form=reset_form,
+            pending=session.get("pending_password_reset"),
+            masked_email=_mask_email(pending["email"]),
+        )
+
+    if request.method == "POST" and pending and pending.get("verified") and request.form.get("new_password") is not None:
+        if reset_form.validate_on_submit():
+            user = db.session.get(User, pending["user_id"])
+            if not user or not user.is_active:
+                session.pop("pending_password_reset", None)
+                flash("That account is no longer available. Register again.", "danger")
+                return redirect(url_for("auth.register"))
+            user.set_password(reset_form.new_password.data)
+            session.pop("pending_password_reset", None)
+            db.session.commit()
+            log_audit("password_recovery", "user", f"username={user.username}, method=email_otp")
+            flash("Password reset successful. Please log in.", "success")
+            return _redirect_login_for_role(user.role)
+        return render_template(
+            "forgot_password.html",
+            lookup_form=lookup_form,
+            otp_form=otp_form,
+            reset_form=reset_form,
+            pending=pending,
+            masked_email=_mask_email(pending["email"]),
+        )
 
     if lookup_form.validate_on_submit():
         user = _find_user_by_login(lookup_form.login.data)
-        if not user:
+        if not user or not user.is_active:
             flash(
-                "No account found with that username or email. "
-                "On the live demo, new accounts are cleared when the free server restarts — "
-                "register again, or log in with patient / patient123.",
+                "No account found with that username or email. Register again if you do not have an account.",
                 "danger",
             )
-            return render_template(
-                "forgot_password.html", lookup_form=lookup_form, reset_form=reset_form,
-            )
-        session["recovery_user_id"] = user.id
-        return redirect(url_for("auth.forgot_password"))
+        else:
+            try:
+                _issue_password_reset_otp(user)
+            except Exception as exc:
+                _otp_send_failed(exc)
+            else:
+                flash(f"We sent a 6-digit code to {_mask_email(user.email)}.", "info")
+                return redirect(url_for("auth.forgot_password"))
 
+    pending = _pending_password_reset()
     return render_template(
         "forgot_password.html",
-        user=user,
         lookup_form=lookup_form,
+        otp_form=otp_form,
         reset_form=reset_form,
+        pending=pending,
+        masked_email=_mask_email(pending["email"]) if pending else "",
     )
 
 
@@ -274,28 +509,22 @@ def register_admin():
     if form.validate_on_submit():
         username = _normalize_username(form.username.data)
         email = _normalize_email(form.email.data)
-        if _username_taken(username):
-            flash("Username already exists.", "danger")
-        elif _email_taken(email):
-            flash("Email already registered.", "danger")
-        else:
-            user = User(
-                username=username,
-                email=email,
-                full_name=form.full_name.data.strip(),
-                role="admin",
-                is_active=True,
-            )
-            user.set_password(form.password.data)
-            db.session.add(user)
-            db.session.commit()
-            log_audit("register", "user", f"username={user.username}, role=admin")
-            login_user(user)
-            flash(
-                f"Admin registration successful. You are signed in as {user.username}.",
-                "success",
-            )
-            return redirect_to_role_home()
+        if not _registration_blocked(username, email, "admin", None):
+            try:
+                _issue_registration_otp({
+                    "username": username,
+                    "email": email,
+                    "full_name": form.full_name.data.strip(),
+                    "role": "admin",
+                    "professional_credentials": None,
+                    "password_hash": generate_password_hash(form.password.data),
+                    "cancel_endpoint": "auth.register_admin",
+                })
+            except Exception as exc:
+                _otp_send_failed(exc)
+            else:
+                flash(f"We sent a 6-digit code to {email}.", "info")
+                return redirect(url_for("auth.verify_registration"))
     return render_template("admin_register.html", form=form)
 
 

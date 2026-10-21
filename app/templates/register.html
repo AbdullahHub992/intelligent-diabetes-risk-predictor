@@ -1,4 +1,5 @@
 ﻿{% extends "base.html" %}
+{% from "includes/password_field.html" import password_field %}
 {% block title %}Register{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
@@ -8,7 +9,8 @@
                 {% include 'includes/live_demo_notice.html' %}
                 <h3 class="mb-2">User Registration</h3>
                 <p class="text-muted small mb-4">
-                    Register as a <strong>User</strong> — choose Patient or Healthcare Provider during signup.
+                    Register as a <strong>Patient</strong> or <strong>Healthcare Provider</strong>.
+                    We email a 6-digit code, and the account is created only after you enter it.
                     Admin accounts are registered separately.
                 </p>
                 <form method="POST" id="registerForm">
@@ -43,11 +45,14 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            {{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}
+                            {{ form.password.label(class="form-label") }}
+                            {{ password_field(form.password, "At least 9 characters") }}
+                            <div class="form-text">At least 9 characters, with 1 uppercase letter, 1 number, and 1 special character.</div>
                             {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors[0] }}</div>{% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            {{ form.confirm_password.label(class="form-label") }}{{ form.confirm_password(class="form-control") }}
+                            {{ form.confirm_password.label(class="form-label") }}
+                            {{ password_field(form.confirm_password, "Repeat the password") }}
                             {% if form.confirm_password.errors %}<div class="text-danger small mt-1">{{ form.confirm_password.errors[0] }}</div>{% endif %}
                         </div>
                     </div>
