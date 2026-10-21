@@ -597,8 +597,7 @@ def profile_settings():
 @auth_bp.route("/logout")
 @login_required
 def logout():
-    role = current_user.role
     log_audit("logout", "user")
     logout_user()
     flash("You have been logged out securely.", "info")
-    return _redirect_login_for_role(role)
+    return redirect(url_for("main.index"))
