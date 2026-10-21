@@ -65,6 +65,8 @@ class Config:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "").replace(" ", "")
     MAIL_FROM = os.environ.get("MAIL_FROM") or os.environ.get("MAIL_USERNAME", "")
+    # Render's free plan blocks SMTP ports, so the live site sends through Brevo instead.
+    BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "").replace(" ", "")
     OTP_EXPIRE_MINUTES = 10
     # Any one of these codes is accepted on each admin login.
     ADMIN_ACCESS_CODES = ("IDRP-ADMIN-01", "IDRP-ADMIN-02", "IDRP-ADMIN-03")

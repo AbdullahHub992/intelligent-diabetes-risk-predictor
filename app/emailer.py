@@ -1,5 +1,8 @@
+import json
 import os
 import smtplib
+import urllib.error
+import urllib.request
 from email.message import EmailMessage
 
 from flask import current_app
@@ -14,10 +17,39 @@ class MailNotConfigured(RuntimeError):
 def _mail_setting(name, default=""):
     _load_dotenv()
     value = os.environ.get(name) or current_app.config.get(name) or default
-    if name == "MAIL_PASSWORD":
-        value = str(value).replace(" ", "")
+    value = str(value).strip().strip('"').strip("'")
+    if name in ("MAIL_PASSWORD", "BREVO_API_KEY"):
+        value = value.replace(" ", "")
     current_app.config[name] = value
     return value
+
+
+def _send_via_brevo(to_email, subject, body, sender):
+    """Send through Brevo's web API. Render's free plan blocks Gmail's SMTP ports."""
+    api_key = _mail_setting("BREVO_API_KEY")
+    payload = {
+        "sender": {"name": "Intelligent Diabetes Risk Predictor", "email": sender},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "textContent": body,
+    }
+    request = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            response.read()
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        current_app.logger.error("Brevo rejected the email (%s): %s", exc.code, detail)
+        raise
 
 
 def _send_otp_email(to_email, subject, lines):
@@ -32,6 +64,9 @@ def _send_otp_email(to_email, subject, lines):
     message["From"] = sender
     message["To"] = to_email
     message.set_content("\n".join(lines))
+    if _mail_setting("BREVO_API_KEY"):
+        _send_via_brevo(to_email, subject, "\n".join(lines), sender)
+        return
 
     with smtplib.SMTP(
         current_app.config.get("MAIL_SERVER", "smtp.gmail.com"),
