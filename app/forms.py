@@ -159,10 +159,10 @@ class ForgotPasswordEmailForm(FlaskForm):
 
 
 class AdminAccessCode:
-    """Accept any one of the three fixed admin access codes."""
+    """Accept the single admin sign-up access code."""
 
     def __init__(self, message=None):
-        self.message = message or "Enter one of the three admin access codes."
+        self.message = message or "Enter the admin access code."
 
     def __call__(self, form, field):
         from flask import current_app

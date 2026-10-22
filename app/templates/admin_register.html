@@ -24,8 +24,8 @@
                     <div class="mb-3">{{ form.full_name.label(class="form-label") }}{{ form.full_name(class="form-control") }}</div>
                     <div class="mb-3">
                         {{ form.access_code.label(class="form-label") }}
-                        {{ form.access_code(class="form-control", placeholder="One of the 3 admin access codes") }}
-                        <div class="form-text">Enter one access code. Any one of the three fixed codes is accepted.</div>
+                        {{ form.access_code(class="form-control", placeholder="Admin access code") }}
+                        <div class="form-text">Enter the admin access code to create an administrator account.</div>
                         {% if form.access_code.errors %}<div class="text-danger small mt-1">{{ form.access_code.errors[0] }}</div>{% endif %}
                     </div>
                     <div class="row">

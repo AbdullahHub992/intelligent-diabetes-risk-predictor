@@ -68,5 +68,5 @@ class Config:
     # Render's free plan blocks SMTP ports, so the live site sends through Brevo instead.
     BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "").replace(" ", "")
     OTP_EXPIRE_MINUTES = 10
-    # Any one of these codes is accepted on each admin login.
-    ADMIN_ACCESS_CODES = ("IDRP-ADMIN-01", "IDRP-ADMIN-02", "IDRP-ADMIN-03")
+    # Required once, on admin sign-up only.
+    ADMIN_ACCESS_CODES = ("IDRP-ADMIN-01",)
