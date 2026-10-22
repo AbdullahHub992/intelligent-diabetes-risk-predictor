@@ -26,9 +26,6 @@
                         <div class="col-md-6 mb-3">{{ form.phone.label(class="form-label fw-semibold") }}{{ form.phone(class="form-control") }}</div>
                     </div>
                     <div class="mb-3">{{ form.address.label(class="form-label fw-semibold") }}{{ form.address(class="form-control") }}</div>
-                    {% if current_user.is_provider %}
-                    <div class="mb-3">{{ form.professional_credentials.label(class="form-label fw-semibold") }}{{ form.professional_credentials(class="form-control") }}</div>
-                    {% endif %}
                     <hr>
                     <h6 class="mb-3">Baseline Physical Metrics</h6>
                     <div class="row">

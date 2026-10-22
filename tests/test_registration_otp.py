@@ -110,7 +110,6 @@ def test_provider_and_admin_registration_ask_for_emailed_code(monkeypatch):
                 "email": "otp-provider-check@gmail.com",
                 "confirm_email": "otp-provider-check@gmail.com",
                 "role": "provider",
-                "professional_credentials": "MD-99999",
                 "password": "Doctor1!xy",
                 "confirm_password": "Doctor1!xy",
                 "submit": "Register",

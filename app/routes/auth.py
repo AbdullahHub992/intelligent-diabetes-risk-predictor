@@ -192,15 +192,12 @@ def _issue_registration_otp(pending):
     return code
 
 
-def _registration_blocked(username, email, role, credentials):
+def _registration_blocked(username, email):
     if _username_taken(username):
         flash("Username already exists.", "danger")
         return True
     if _email_taken(email):
         flash("Email already registered.", "danger")
-        return True
-    if role == "provider" and not (credentials or "").strip():
-        flash("Healthcare providers must provide professional credentials (e.g. license or hospital ID).", "danger")
         return True
     return False
 
@@ -224,15 +221,14 @@ def register():
     if form.validate_on_submit():
         username = _normalize_username(form.username.data)
         email = _normalize_email(form.email.data)
-        credentials = (form.professional_credentials.data or "").strip() or None
-        if not _registration_blocked(username, email, form.role.data, credentials):
+        if not _registration_blocked(username, email):
             try:
                 _issue_registration_otp({
                     "username": username,
                     "email": email,
                     "full_name": form.full_name.data.strip(),
                     "role": form.role.data,
-                    "professional_credentials": credentials,
+                    "professional_credentials": None,
                     "password_hash": generate_password_hash(form.password.data),
                     "cancel_endpoint": "auth.register",
                 })
@@ -284,9 +280,7 @@ def verify_registration():
             session["pending_registration"] = pending
             session.modified = True
             flash("That code is incorrect.", "danger")
-        elif _registration_blocked(
-            pending["username"], pending["email"], pending["role"], pending.get("professional_credentials")
-        ):
+        elif _registration_blocked(pending["username"], pending["email"]):
             session.pop("pending_registration", None)
             return redirect(url_for(pending.get("cancel_endpoint") or "auth.register"))
         else:
@@ -509,7 +503,7 @@ def register_admin():
     if form.validate_on_submit():
         username = _normalize_username(form.username.data)
         email = _normalize_email(form.email.data)
-        if not _registration_blocked(username, email, "admin", None):
+        if not _registration_blocked(username, email):
             try:
                 _issue_registration_otp({
                     "username": username,
@@ -584,8 +578,6 @@ def profile_settings():
         current_user.baseline_weight_kg = form.baseline_weight_kg.data
         current_user.baseline_age = form.baseline_age.data
         current_user.baseline_sex = form.baseline_sex.data or None
-        if current_user.is_provider:
-            current_user.professional_credentials = (form.professional_credentials.data or "").strip() or None
         db.session.commit()
         log_audit("update_profile", "user", f"username={current_user.username}")
         flash("Your profile has been updated successfully.", "success")

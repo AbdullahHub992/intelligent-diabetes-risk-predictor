@@ -35,13 +35,7 @@
                         </div>
                     </div>
                     <p class="small text-muted">Use a real email and type it twice. If you already registered with a wrong email, log in with your <strong>username</strong> and change it in My Profile.</p>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">{{ form.role.label(class="form-label") }}{{ form.role(class="form-select", id="roleSelect") }}</div>
-                        <div class="col-md-6 mb-3" id="credentialsField">
-                            {{ form.professional_credentials.label(class="form-label") }}
-                            {{ form.professional_credentials(class="form-control", placeholder="License no., hospital ID, etc.") }}
-                        </div>
-                    </div>
+                    <div class="mb-3">{{ form.role.label(class="form-label") }}{{ form.role(class="form-select") }}</div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             {{ form.password.label(class="form-label") }}
@@ -61,18 +55,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-{% block scripts %}
-<script>
-(function () {
-    const role = document.getElementById('roleSelect');
-    const cred = document.getElementById('credentialsField');
-    function toggle() {
-        if (!role || !cred) return;
-        cred.style.display = role.value === 'provider' ? '' : 'none';
-    }
-    role?.addEventListener('change', toggle);
-    toggle();
-})();
-</script>
 {% endblock %}

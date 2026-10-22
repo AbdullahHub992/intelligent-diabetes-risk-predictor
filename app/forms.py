@@ -93,10 +93,6 @@ class ProfileSettingsForm(FlaskForm):
         choices=[("", "Not set"), ("female", "Female"), ("male", "Male")],
         validators=[Optional()],
     )
-    professional_credentials = StringField(
-        "Professional Credentials",
-        validators=[Optional(), Length(max=200)],
-    )
     current_password = PasswordField(
         "Current Password",
         validators=[Optional()],
@@ -138,10 +134,6 @@ class RegisterForm(FlaskForm):
         ],
         validators=[DataRequired()],
         default="patient",
-    )
-    professional_credentials = StringField(
-        "Professional Credentials (for healthcare providers)",
-        validators=[Optional(), Length(max=200)],
     )
     password = PasswordField("Password", validators=STRONG_PASSWORD)
     confirm_password = PasswordField(
@@ -223,7 +215,6 @@ class CreateUserForm(FlaskForm):
         ("provider", "User (Healthcare Provider)"),
         ("admin", "Admin"),
     ])
-    professional_credentials = StringField("Professional Credentials", validators=[Optional(), Length(max=200)])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
     confirm_password = PasswordField(
         "Confirm Password",
@@ -391,7 +382,6 @@ class UserEditForm(FlaskForm):
         ("provider", "User (Healthcare Provider)"),
         ("admin", "Admin"),
     ])
-    professional_credentials = StringField("Professional Credentials", validators=[Optional(), Length(max=200)])
     is_active = BooleanField("Active Account")
     submit = SubmitField("Save Changes")
 

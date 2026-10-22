@@ -322,15 +322,13 @@ def create_user():
             flash("Username already exists.", "danger")
         elif User.query.filter_by(email=form.email.data).first():
             flash("Email already registered.", "danger")
-        elif form.role.data == "provider" and not (form.professional_credentials.data or "").strip():
-            flash("Healthcare providers require professional credentials.", "danger")
         else:
             user = User(
                 username=form.username.data,
                 email=form.email.data,
                 full_name=form.full_name.data,
                 role=form.role.data,
-                professional_credentials=(form.professional_credentials.data or "").strip() or None,
+                professional_credentials=None,
                 security_question="city",
                 is_active=True,
             )
@@ -354,7 +352,6 @@ def edit_user(user_id):
         user.full_name = form.full_name.data
         user.email = form.email.data
         user.role = form.role.data
-        user.professional_credentials = (form.professional_credentials.data or "").strip() or None
         user.is_active = form.is_active.data
         db.session.commit()
         log_audit("edit_user", "user", f"id={user_id}")
