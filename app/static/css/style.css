@@ -299,6 +299,11 @@ main {
 
 .password-field .form-control {
     padding-right: 2.75rem;
+    -webkit-text-security: disc;
+}
+
+.password-field .form-control.is-visible {
+    -webkit-text-security: none;
 }
 
 .password-toggle {
