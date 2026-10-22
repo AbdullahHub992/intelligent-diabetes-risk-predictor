@@ -22,14 +22,6 @@
                         {{ form.password.label(class="form-label") }}
                         {{ password_field(form.password, "Enter password") }}
                     </div>
-                    {% if portal_key == 'admin' %}
-                    <div class="mb-3">
-                        {{ form.access_code.label(class="form-label") }}
-                        {{ form.access_code(class="form-control", placeholder="One of the 3 admin access codes") }}
-                        <div class="form-text">Enter one access code each time you sign in. Any one of the three fixed codes is accepted.</div>
-                        {% if form.access_code.errors %}<div class="text-danger small mt-1">{{ form.access_code.errors[0] }}</div>{% endif %}
-                    </div>
-                    {% endif %}
                     <div class="form-check mb-3">{{ form.remember(class="form-check-input") }}{{ form.remember.label(class="form-check-label") }}</div>
                     {{ form.submit(class="btn w-100 " + ("btn-primary" if portal_key == "user" else "btn-dark")) }}
                 </form>

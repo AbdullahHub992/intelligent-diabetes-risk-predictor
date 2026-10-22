@@ -75,10 +75,6 @@ class LoginForm(FlaskForm):
     submit = SubmitField("Login")
 
 
-class AdminLoginForm(LoginForm):
-    access_code = StringField("Access Code", validators=[DataRequired(message="Enter one of the three admin access codes.")])
-
-
 class ProfileSettingsForm(FlaskForm):
     full_name = StringField("Full Name", validators=[DataRequired(), Length(max=120)])
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])

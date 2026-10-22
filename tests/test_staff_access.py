@@ -19,7 +19,6 @@ def test_seeded_admin_login_is_removed():
         data={
             "username": "admin",
             "password": "admin123",
-            "access_code": "IDRP-ADMIN-01",
             "csrf_token": token,
             "submit": "Login",
         },
@@ -30,7 +29,7 @@ def test_seeded_admin_login_is_removed():
     assert b"Admin Panel" not in response.data
 
 
-def test_admin_login_accepts_any_one_of_three_access_codes():
+def test_admin_login_does_not_ask_for_an_access_code():
     from app import db
     from app.models import User
 
@@ -54,19 +53,8 @@ def test_admin_login_accepts_any_one_of_three_access_codes():
 
     client = app.test_client()
     try:
-        token = _csrf_token(client, "/login/admin")
-        rejected = client.post(
-            "/login/admin",
-            data={
-                "username": username,
-                "password": "AdminPass1!",
-                "access_code": "not-a-real-code",
-                "csrf_token": token,
-                "submit": "Login",
-            },
-            follow_redirects=True,
-        )
-        assert b"That access code is not valid" in rejected.data
+        page = client.get("/login/admin")
+        assert b"Access Code" not in page.data
 
         token = _csrf_token(client, "/login/admin")
         accepted = client.post(
@@ -74,7 +62,6 @@ def test_admin_login_accepts_any_one_of_three_access_codes():
             data={
                 "username": username,
                 "password": "AdminPass1!",
-                "access_code": "IDRP-ADMIN-02",
                 "csrf_token": token,
                 "submit": "Login",
             },
@@ -100,7 +87,6 @@ def test_admin_login_rejects_wrong_password():
         data={
             "username": "admin",
             "password": "wrong-password",
-            "access_code": "IDRP-ADMIN-01",
             "csrf_token": token,
             "submit": "Login",
         },

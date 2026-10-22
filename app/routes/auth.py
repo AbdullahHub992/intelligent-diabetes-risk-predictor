@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from app.emailer import MailNotConfigured, send_password_reset_otp, send_registration_otp
 from app.forms import (
-    AdminLoginForm, AdminRegisterForm, ChangePasswordForm,
+    AdminRegisterForm, ChangePasswordForm,
     ForgotPasswordForm, ForgotPasswordLookupForm, LoginForm, ProfileSettingsForm,
     RegisterForm, RegistrationOtpForm, ResetPasswordForm,
 )
@@ -93,7 +93,7 @@ def _handle_login(portal_key):
     if not portal:
         abort(404)
 
-    form = AdminLoginForm() if portal_key == "admin" else LoginForm()
+    form = LoginForm()
     if form.validate_on_submit():
         username = _normalize_username(form.username.data)
         if is_login_rate_limited(username):
@@ -111,11 +111,6 @@ def _handle_login(portal_key):
                     f"Please use {target} on the home page.",
                     "danger",
                 )
-                return render_template("login.html", form=form, portal=portal, portal_key=portal_key)
-
-            if portal_key == "admin" and not _admin_access_code_ok(form.access_code.data):
-                record_failed_login(username)
-                flash("That access code is not valid. Enter one of the three admin access codes.", "danger")
                 return render_template("login.html", form=form, portal=portal, portal_key=portal_key)
 
             login_user(user, remember=form.remember.data)
@@ -311,12 +306,6 @@ def verify_registration():
         role_label=ROLE_EMAIL_LABELS.get(pending["role"], "account"),
         cancel_endpoint=pending.get("cancel_endpoint") or "auth.register",
     )
-
-
-def _admin_access_code_ok(value):
-    entered = (value or "").strip().casefold()
-    allowed = current_app.config.get("ADMIN_ACCESS_CODES") or ()
-    return bool(entered) and entered in {str(code).strip().casefold() for code in allowed}
 
 
 def request_is_resend():
