@@ -135,8 +135,11 @@ main {
 }
 
 .navbar-brand {
-    font-size: 1.1rem;
-    max-width: min(42vw, 280px);
+    font-size: 1.05rem;
+    max-width: none;
+    white-space: normal;
+    line-height: 1.25;
+    flex-shrink: 0;
 }
 
 .navbar .btn[href*="logout"] {
