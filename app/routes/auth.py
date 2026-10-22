@@ -312,20 +312,35 @@ def request_is_resend():
     return request.method == "POST" and request.form.get("resend") == "1"
 
 
-def _pending_password_reset():
-    pending = session.get("pending_password_reset")
-    if not pending:
+def _reset_session_key(portal_key):
+    return f"pending_password_reset:{portal_key}"
+
+
+def _pending_password_reset(portal_key):
+    key = _reset_session_key(portal_key)
+    pending = session.get(key)
+    if not pending or pending.get("portal") != portal_key:
         return None
     if datetime.fromisoformat(pending["expires_at"]) <= datetime.utcnow():
-        session.pop("pending_password_reset", None)
+        session.pop(key, None)
         return None
     return pending
 
 
-def _issue_password_reset_otp(user):
+def _clear_password_reset(portal_key):
+    session.pop(_reset_session_key(portal_key), None)
+
+
+def _save_password_reset(portal_key, pending):
+    session[_reset_session_key(portal_key)] = pending
+    session.modified = True
+
+
+def _issue_password_reset_otp(user, portal_key):
     code = f"{secrets.randbelow(1_000_000):06d}"
     now = datetime.utcnow()
     pending = {
+        "portal": portal_key,
         "user_id": user.id,
         "email": user.email,
         "otp_hash": generate_password_hash(code),
@@ -334,108 +349,17 @@ def _issue_password_reset_otp(user):
         "attempts": 0,
         "verified": False,
     }
-    session["pending_password_reset"] = pending
-    session.modified = True
+    _save_password_reset(portal_key, pending)
     try:
-        send_password_reset_otp(user.email, code)
+        send_password_reset_otp(user.email, code, ROLE_EMAIL_LABELS.get(user.role, "account"))
     except Exception:
-        session.pop("pending_password_reset", None)
+        _clear_password_reset(portal_key)
         raise
     return code
 
 
-@auth_bp.route("/forgot-password", methods=["GET", "POST"])
-def forgot_password():
-    if current_user.is_authenticated:
-        return redirect_to_role_home()
-
-    lookup_form = ForgotPasswordLookupForm()
-    otp_form = RegistrationOtpForm()
-    reset_form = ForgotPasswordForm()
-    pending = _pending_password_reset()
-
-    if request.method == "POST" and pending and request_is_resend() and not pending.get("verified"):
-        last_sent = datetime.fromisoformat(pending["last_sent"])
-        if (datetime.utcnow() - last_sent).total_seconds() < 60:
-            flash("Wait a minute before requesting another code.", "warning")
-        else:
-            user = db.session.get(User, pending["user_id"])
-            if not user or not user.is_active:
-                session.pop("pending_password_reset", None)
-                flash("Start password recovery again.", "danger")
-                return redirect(url_for("auth.forgot_password"))
-            try:
-                _issue_password_reset_otp(user)
-            except Exception as exc:
-                _otp_send_failed(exc)
-            else:
-                flash(f"A new code was sent to {_mask_email(user.email)}.", "info")
-        return redirect(url_for("auth.forgot_password"))
-
-    if request.method == "POST" and pending and not pending.get("verified") and request.form.get("otp") is not None:
-        if otp_form.validate_on_submit():
-            if not check_password_hash(pending["otp_hash"], (otp_form.otp.data or "").strip()):
-                pending["attempts"] = int(pending.get("attempts") or 0) + 1
-                if pending["attempts"] >= 5:
-                    session.pop("pending_password_reset", None)
-                    flash("Too many incorrect codes. Start password recovery again.", "danger")
-                    return redirect(url_for("auth.forgot_password"))
-                session["pending_password_reset"] = pending
-                session.modified = True
-                flash("That code is incorrect.", "danger")
-            else:
-                pending["verified"] = True
-                session["pending_password_reset"] = pending
-                session.modified = True
-                flash("Code verified. Choose a new password.", "success")
-        return render_template(
-            "forgot_password.html",
-            lookup_form=lookup_form,
-            otp_form=otp_form,
-            reset_form=reset_form,
-            pending=session.get("pending_password_reset"),
-            masked_email=_mask_email(pending["email"]),
-        )
-
-    if request.method == "POST" and pending and pending.get("verified") and request.form.get("new_password") is not None:
-        if reset_form.validate_on_submit():
-            user = db.session.get(User, pending["user_id"])
-            if not user or not user.is_active:
-                session.pop("pending_password_reset", None)
-                flash("That account is no longer available. Register again.", "danger")
-                return redirect(url_for("auth.register"))
-            user.set_password(reset_form.new_password.data)
-            session.pop("pending_password_reset", None)
-            db.session.commit()
-            log_audit("password_recovery", "user", f"username={user.username}, method=email_otp")
-            flash("Password reset successful. Please log in.", "success")
-            return _redirect_login_for_role(user.role)
-        return render_template(
-            "forgot_password.html",
-            lookup_form=lookup_form,
-            otp_form=otp_form,
-            reset_form=reset_form,
-            pending=pending,
-            masked_email=_mask_email(pending["email"]),
-        )
-
-    if lookup_form.validate_on_submit():
-        user = _find_user_by_login(lookup_form.login.data)
-        if not user or not user.is_active:
-            flash(
-                "No account found with that username or email. Register again if you do not have an account.",
-                "danger",
-            )
-        else:
-            try:
-                _issue_password_reset_otp(user)
-            except Exception as exc:
-                _otp_send_failed(exc)
-            else:
-                flash(f"We sent a 6-digit code to {_mask_email(user.email)}.", "info")
-                return redirect(url_for("auth.forgot_password"))
-
-    pending = _pending_password_reset()
+def _forgot_password_page(portal_key, lookup_form, otp_form, reset_form, pending):
+    portal = LOGIN_PORTALS[portal_key]
     return render_template(
         "forgot_password.html",
         lookup_form=lookup_form,
@@ -443,6 +367,112 @@ def forgot_password():
         reset_form=reset_form,
         pending=pending,
         masked_email=_mask_email(pending["email"]) if pending else "",
+        portal_key=portal_key,
+        portal_title=portal["title"].replace("Login", "Password Recovery"),
+        login_endpoint="auth.login_admin" if portal_key == "admin" else "auth.user_login",
+    )
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@auth_bp.route("/forgot-password/<portal_key>", methods=["GET", "POST"])
+def forgot_password(portal_key="user"):
+    if current_user.is_authenticated:
+        return redirect_to_role_home()
+    if portal_key not in LOGIN_PORTALS:
+        abort(404)
+
+    if request.args.get("cancel") == "1":
+        _clear_password_reset(portal_key)
+        return redirect(url_for("auth.forgot_password", portal_key=portal_key))
+
+    lookup_form = ForgotPasswordLookupForm()
+    otp_form = RegistrationOtpForm()
+    reset_form = ForgotPasswordForm()
+    pending = _pending_password_reset(portal_key)
+    again = url_for("auth.forgot_password", portal_key=portal_key)
+
+    if request.method == "POST" and pending and request_is_resend() and not pending.get("verified"):
+        last_sent = datetime.fromisoformat(pending["last_sent"])
+        if (datetime.utcnow() - last_sent).total_seconds() < 60:
+            flash("Wait a minute before requesting another code.", "warning")
+        else:
+            user = db.session.get(User, pending["user_id"])
+            if not user or not user.is_active or user.role not in LOGIN_PORTALS[portal_key]["roles"]:
+                _clear_password_reset(portal_key)
+                flash("Start password recovery again.", "danger")
+                return redirect(again)
+            try:
+                _issue_password_reset_otp(user, portal_key)
+            except Exception as exc:
+                _otp_send_failed(exc)
+            else:
+                flash(f"A new code was sent to {_mask_email(user.email)}.", "info")
+        return redirect(again)
+
+    if request.method == "POST" and pending and not pending.get("verified") and request.form.get("otp") is not None:
+        if otp_form.validate_on_submit():
+            if not check_password_hash(pending["otp_hash"], (otp_form.otp.data or "").strip()):
+                pending["attempts"] = int(pending.get("attempts") or 0) + 1
+                if pending["attempts"] >= 5:
+                    _clear_password_reset(portal_key)
+                    flash("Too many incorrect codes. Start password recovery again.", "danger")
+                    return redirect(again)
+                _save_password_reset(portal_key, pending)
+                flash("That code is incorrect.", "danger")
+            else:
+                pending["verified"] = True
+                _save_password_reset(portal_key, pending)
+                flash("Code verified. Choose a new password.", "success")
+        return _forgot_password_page(
+            portal_key, lookup_form, otp_form, reset_form, _pending_password_reset(portal_key)
+        )
+
+    if request.method == "POST" and pending and pending.get("verified") and request.form.get("new_password") is not None:
+        if reset_form.validate_on_submit():
+            user = db.session.get(User, pending["user_id"])
+            if (
+                not user
+                or not user.is_active
+                or user.role not in LOGIN_PORTALS[portal_key]["roles"]
+            ):
+                _clear_password_reset(portal_key)
+                flash("That account is no longer available. Register again.", "danger")
+                return redirect(url_for("auth.register"))
+            user.set_password(reset_form.new_password.data)
+            _clear_password_reset(portal_key)
+            db.session.commit()
+            log_audit("password_recovery", "user", f"username={user.username}, method=email_otp, portal={portal_key}")
+            flash("Password reset successful. Please log in.", "success")
+            return _redirect_login_for_role(user.role)
+        return _forgot_password_page(portal_key, lookup_form, otp_form, reset_form, pending)
+
+    if lookup_form.validate_on_submit():
+        user = _find_user_by_login(lookup_form.login.data)
+        allowed = LOGIN_PORTALS[portal_key]["roles"]
+        if not user or not user.is_active:
+            flash(
+                "No account found with that username or email. Register again if you do not have an account.",
+                "danger",
+            )
+        elif user.role not in allowed:
+            if user.role == "admin":
+                flash("This is an admin account. Use Forgot password on the Admin login page.", "danger")
+            else:
+                flash(
+                    "This is a patient or healthcare provider account. Use Forgot password on the User login page.",
+                    "danger",
+                )
+        else:
+            try:
+                _issue_password_reset_otp(user, portal_key)
+            except Exception as exc:
+                _otp_send_failed(exc)
+            else:
+                flash(f"We sent a 6-digit code to {_mask_email(user.email)}.", "info")
+                return redirect(again)
+
+    return _forgot_password_page(
+        portal_key, lookup_form, otp_form, reset_form, _pending_password_reset(portal_key)
     )
 
 

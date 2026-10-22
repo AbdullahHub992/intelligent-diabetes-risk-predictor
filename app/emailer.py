@@ -97,15 +97,16 @@ def send_registration_otp(to_email, code, role_label):
     )
 
 
-def send_password_reset_otp(to_email, code):
+def send_password_reset_otp(to_email, code, role_label="account"):
     minutes = current_app.config.get("OTP_EXPIRE_MINUTES", 10)
     _send_otp_email(
         to_email,
-        "Your password reset code — Intelligent Diabetes Risk Predictor",
+        f"Your {role_label} password reset code — Intelligent Diabetes Risk Predictor",
         [
-            f"Your password reset code is {code}.",
+            f"Your {role_label} password reset code is {code}.",
             "",
-            "Enter this code on the website, then choose a new password.",
+            "This code changes only that account. Patient, healthcare provider, and admin passwords are separate.",
+            "Enter this code on the matching login's Forgot password page, then choose a new password.",
             f"It expires in {minutes} minutes.",
             "",
             "If you did not ask to reset your password, you can ignore this email.",

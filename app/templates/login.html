@@ -27,12 +27,12 @@
                 </form>
                 {% if portal_key == 'user' %}
                 <p class="mt-3 mb-1 text-center small">
-                    <a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a>
+                    <a href="{{ url_for('auth.forgot_password', portal_key=portal_key) }}">Forgot password?</a>
                 </p>
                 <p class="mb-0 text-center">No account? <a href="{{ url_for('auth.register') }}">Register</a></p>
                 {% else %}
                 <p class="mt-3 mb-0 text-center small">
-                    <a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a>
+                    <a href="{{ url_for('auth.forgot_password', portal_key=portal_key) }}">Forgot password?</a>
                 </p>
                 {% endif %}
                 {% if portal.demo %}
