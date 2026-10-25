@@ -1,5 +1,7 @@
+import base64
 import json
 import os
+import urllib.error
 import urllib.request
 from datetime import datetime
 
@@ -135,6 +137,57 @@ def load_backup_payload(app=None):
             except Exception:
                 return None
     return None
+
+
+def publish_live_accounts():
+    """Save current accounts on the backup branch so a free-server restart can restore them."""
+    token = (os.environ.get("ACCOUNT_BACKUP_TOKEN") or "").strip()
+    if not token:
+        return False
+    payload = dump_live_accounts()
+    if not payload.get("users"):
+        return False
+
+    content = json.dumps(payload, indent=2) + "\n"
+    api = f"https://api.github.com/repos/{BACKUP_REPO}/contents/{BACKUP_PATH}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "intelligent-diabetes-risk-predictor",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    sha = None
+    get_request = urllib.request.Request(f"{api}?ref={BACKUP_BRANCH}", headers=headers)
+    try:
+        with urllib.request.urlopen(get_request, timeout=20) as response:
+            sha = json.loads(response.read().decode()).get("sha")
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            raise
+
+    body = {
+        "message": "Backup registered live accounts",
+        "content": base64.b64encode(content.encode()).decode(),
+        "branch": BACKUP_BRANCH,
+    }
+    if sha:
+        body["sha"] = sha
+    put_request = urllib.request.Request(
+        api,
+        data=json.dumps(body).encode(),
+        headers={**headers, "Content-Type": "application/json"},
+        method="PUT",
+    )
+    with urllib.request.urlopen(put_request, timeout=20) as response:
+        response.read()
+    return True
+
+
+def save_accounts_after_change():
+    try:
+        publish_live_accounts()
+    except Exception as exc:
+        print(f"Live account backup skipped: {exc}")
 
 
 def restore_from_backup(app):

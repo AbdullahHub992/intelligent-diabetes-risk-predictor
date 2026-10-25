@@ -28,6 +28,11 @@ jobs:
         run: |
           git config user.name "live-account-backup"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          count="$(python -c "import json; print(len(json.load(open('/tmp/live_accounts.json')).get('users') or []))")"
+          if [ "$count" = "0" ]; then
+            echo "Live database is empty. Keeping the previous account backup."
+            exit 0
+          fi
           git checkout -B account-backup
           mkdir -p data
           cp /tmp/live_accounts.json data/live_accounts.json

@@ -7,6 +7,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import db
+from app.account_backup import save_accounts_after_change
 from app.decorators import role_required
 from app.forms import (
     AssignDoctorPatientForm, CreateUserForm, DatasetUploadForm, EducationForm,
@@ -336,6 +337,7 @@ def create_user():
             user.set_security_answer(form.username.data)
             db.session.add(user)
             db.session.commit()
+            save_accounts_after_change()
             log_audit("create_user", "user", f"username={user.username}, role={user.role}")
             flash(f"User '{user.username}' created.", "success")
             return redirect(url_for("admin.manage_users"))
@@ -354,6 +356,7 @@ def edit_user(user_id):
         user.role = form.role.data
         user.is_active = form.is_active.data
         db.session.commit()
+        save_accounts_after_change()
         log_audit("edit_user", "user", f"id={user_id}")
         flash("User updated.", "success")
         return redirect(url_for("admin.manage_users"))
@@ -369,6 +372,7 @@ def reset_user_password(user_id):
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
+        save_accounts_after_change()
         log_audit("reset_password", "user", f"id={user_id}")
         flash("Password reset successfully.", "success")
         return redirect(url_for("admin.manage_users"))

@@ -39,6 +39,9 @@ services:
       # Free Render blocks SMTP ports 465 and 587. Brevo sends over HTTPS instead.
       - key: BREVO_API_KEY
         sync: false
+      # Lets a new account survive a free-server restart. GitHub token with contents write.
+      - key: ACCOUNT_BACKUP_TOKEN
+        sync: false
       # Optional — link a Postgres DB (Neon free tier or Render Postgres):
       # - key: DATABASE_URL
       #   sync: false

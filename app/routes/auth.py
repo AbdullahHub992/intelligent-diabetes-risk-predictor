@@ -6,6 +6,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
+from app.account_backup import save_accounts_after_change
 from app.emailer import MailNotConfigured, send_password_reset_otp, send_registration_otp
 from app.forms import (
     AdminRegisterForm, ChangePasswordForm,
@@ -290,6 +291,7 @@ def verify_registration():
             )
             db.session.add(user)
             db.session.commit()
+            save_accounts_after_change()
             session.pop("pending_registration", None)
             log_audit("register", "user", f"username={user.username}, role={user.role}, email_verified=true")
             login_user(user)
@@ -441,6 +443,7 @@ def forgot_password(portal_key="user"):
             user.set_password(reset_form.new_password.data)
             _clear_password_reset(portal_key)
             db.session.commit()
+            save_accounts_after_change()
             log_audit("password_recovery", "user", f"username={user.username}, method=email_otp, portal={portal_key}")
             flash("Password reset successful. Please log in.", "success")
             return _redirect_login_for_role(user.role)
@@ -500,6 +503,7 @@ def reset_password_email(token):
         user.set_password(form.password.data)
         PasswordResetToken.query.filter_by(user_id=user.id).delete()
         db.session.commit()
+        save_accounts_after_change()
         log_audit("password_recovery", "user", f"username={user.username}, method=email")
         flash("Password reset successful. Please log in.", "success")
         return _redirect_login_for_role(user.role)
@@ -552,6 +556,7 @@ def change_password():
         else:
             current_user.set_password(form.new_password.data)
             db.session.commit()
+            save_accounts_after_change()
             log_audit("change_password", "user", f"username={current_user.username}")
             flash("Password updated successfully.", "success")
             return redirect(url_for("auth.profile_settings"))
@@ -598,6 +603,7 @@ def profile_settings():
         current_user.baseline_age = form.baseline_age.data
         current_user.baseline_sex = form.baseline_sex.data or None
         db.session.commit()
+        save_accounts_after_change()
         log_audit("update_profile", "user", f"username={current_user.username}")
         flash("Your profile has been updated successfully.", "success")
         return redirect(url_for("auth.profile_settings"))
