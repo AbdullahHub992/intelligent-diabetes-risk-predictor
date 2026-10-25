@@ -1,4 +1,5 @@
 import os
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -28,7 +29,13 @@ def _database_uri():
         # Render/Neon may provide postgres:// — SQLAlchemy needs postgresql://
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
-        return url
+        parts = urlparse(url)
+        query = [
+            (key, value)
+            for key, value in parse_qsl(parts.query, keep_blank_values=True)
+            if key != "channel_binding"
+        ]
+        return urlunparse(parts._replace(query=urlencode(query)))
     return f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'diabetes.db')}"
 
 
