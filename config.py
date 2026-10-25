@@ -29,6 +29,8 @@ def _database_uri():
         # Render/Neon may provide postgres:// — SQLAlchemy needs postgresql://
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
         parts = urlparse(url)
         query = [
             (key, value)
