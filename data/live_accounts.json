@@ -1,4 +1,1 @@
-{
-  "users": [],
-  "assignments": []
-}
+{"assignments":[],"users":[{"address":null,"created_at":"2026-10-25T18:55:08.240117","email":"abdullahtaufiq2003@gmail.com","full_name":"Abdullah Taufiq","is_active":true,"password_hash":"scrypt:32768:8:1$IDexPNT2KDIe11EL$3539bec943b816426468ac316bffd050c43648d1b68d95de168fefe61b80d42535fcad1971a985db0860033bab7940a4ae53478cb7d9e01b2ba47956a96c88a6","phone":null,"professional_credentials":null,"role":"patient","username":"codewithabdullah"},{"address":null,"created_at":"2026-10-25T19:00:56.037506","email":"abdullahtaufiq126@gmail.com","full_name":"Abdullah Taufiq","is_active":true,"password_hash":"scrypt:32768:8:1$RLWRCPxMESZRMzG3$582938fbf51c0093bbbb8b86918b4851f978d1bfb96f6eeaf9506f8cbbc6bb1d9bde71c3d389b56b54902c2938c08cbfd5b54cc63e6bd4c468ca09a10316db7c","phone":null,"professional_credentials":null,"role":"admin","username":"abdullahsheikh"}]}
