@@ -56,6 +56,10 @@ class Config:
     BASE_DIR = BASE_DIR
     SECRET_KEY = os.environ.get("SECRET_KEY", "diabetes-risk-predictor-cs619-secret-key")
     SQLALCHEMY_DATABASE_URI = _database_uri()
+    SQLALCHEMY_ENGINE_OPTIONS = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300
+}
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "data")
     MODEL_FOLDER = os.path.join(BASE_DIR, "saved_models")
